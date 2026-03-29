@@ -104,15 +104,23 @@ export async function updatePlatformSettingsAction(
     };
   }
 
-  await upsertSystemSettings({
-    schoolName: parsed.data.schoolName,
-    shortName: parsed.data.shortName,
-    motto: parsed.data.motto,
-    footerLabel: parsed.data.footerLabel,
-    supportWhatsappNumber: parsed.data.supportWhatsappNumber,
-    appUrl: parsed.data.appUrl,
-    attendanceCutoffHour: parsed.data.attendanceCutoffHour,
-  });
+  try {
+    await upsertSystemSettings({
+      schoolName: parsed.data.schoolName,
+      shortName: parsed.data.shortName,
+      motto: parsed.data.motto,
+      footerLabel: parsed.data.footerLabel,
+      supportWhatsappNumber: parsed.data.supportWhatsappNumber,
+      appUrl: parsed.data.appUrl,
+      attendanceCutoffHour: parsed.data.attendanceCutoffHour,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Unable to save platform settings.",
+    };
+  }
 
   await logAudit({
     actorId: actor.id,
@@ -157,15 +165,23 @@ export async function updateSmtpSettingsAction(
       : existing?.smtpPassEncrypted ?? null
     : null;
 
-  await upsertSystemSettings({
-    useCustomSmtp: parsed.data.useCustomSmtp,
-    smtpHost: parsed.data.useCustomSmtp ? parsed.data.smtpHost ?? "" : null,
-    smtpPort: parsed.data.useCustomSmtp ? parsed.data.smtpPort : null,
-    smtpUser: parsed.data.useCustomSmtp ? parsed.data.smtpUser ?? "" : null,
-    smtpPassEncrypted,
-    smtpFrom: parsed.data.useCustomSmtp ? parsed.data.smtpFrom ?? "" : null,
-    smtpSecure: parsed.data.useCustomSmtp ? parsed.data.smtpSecure : null,
-  });
+  try {
+    await upsertSystemSettings({
+      useCustomSmtp: parsed.data.useCustomSmtp,
+      smtpHost: parsed.data.useCustomSmtp ? parsed.data.smtpHost ?? "" : null,
+      smtpPort: parsed.data.useCustomSmtp ? parsed.data.smtpPort : null,
+      smtpUser: parsed.data.useCustomSmtp ? parsed.data.smtpUser ?? "" : null,
+      smtpPassEncrypted,
+      smtpFrom: parsed.data.useCustomSmtp ? parsed.data.smtpFrom ?? "" : null,
+      smtpSecure: parsed.data.useCustomSmtp ? parsed.data.smtpSecure : null,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Unable to save email settings.",
+    };
+  }
 
   await logAudit({
     actorId: actor.id,

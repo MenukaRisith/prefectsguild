@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { siteConfig } from "@/lib/constants";
@@ -30,6 +31,21 @@ export type EffectiveSystemSettings = SiteIdentity & {
 
 function configCipherKey() {
   return createHash("sha256").update(env.AUTH_SECRET).digest();
+}
+
+function isSettingsStoreUnavailable(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  );
+}
+
+function warnSettingsFallback(error: unknown) {
+  if (isSettingsStoreUnavailable(error)) {
+    console.warn(
+      "System settings storage is unavailable. Falling back to built-in defaults.",
+    );
+  }
 }
 
 export function buildWhatsappHref(number: string) {
@@ -92,9 +108,19 @@ export function decryptSystemSecret(payload?: string | null) {
 }
 
 export async function getSystemSettingsRecord() {
-  return db.systemSetting.findUnique({
-    where: { id: SYSTEM_SETTINGS_ID },
-  });
+  try {
+    return await db.systemSetting.findUnique({
+      where: { id: SYSTEM_SETTINGS_ID },
+    });
+  } catch (error) {
+    warnSettingsFallback(error);
+
+    if (isSettingsStoreUnavailable(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function getSystemSettings(): Promise<EffectiveSystemSettings> {
@@ -154,14 +180,24 @@ export async function upsertSystemSettings(
     smtpSecure: boolean | null;
   }>,
 ) {
-  return db.systemSetting.upsert({
-    where: { id: SYSTEM_SETTINGS_ID },
-    update: data,
-    create: {
-      id: SYSTEM_SETTINGS_ID,
-      ...data,
-    },
-  });
+  try {
+    return await db.systemSetting.upsert({
+      where: { id: SYSTEM_SETTINGS_ID },
+      update: data,
+      create: {
+        id: SYSTEM_SETTINGS_ID,
+        ...data,
+      },
+    });
+  } catch (error) {
+    if (isSettingsStoreUnavailable(error)) {
+      throw new Error(
+        "Runtime settings storage is not ready on this deployment yet. Run the latest deploy so the database schema can sync.",
+      );
+    }
+
+    throw error;
+  }
 }
 
 export async function getSmtpRuntimeConfig() {
