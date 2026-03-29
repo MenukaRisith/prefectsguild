@@ -3,11 +3,19 @@ import {
   AbsenceStatus,
   AttendanceScanStatus,
   AnnouncementAudience,
+  DutyAssignmentKind,
   ReminderStatus,
   Role,
   TaskStatus,
 } from "@prisma/client";
-import { addDays } from "date-fns";
+import {
+  addDays,
+  eachDayOfInterval,
+  endOfDay,
+  format,
+  startOfDay,
+  subDays,
+} from "date-fns";
 import { db } from "@/lib/db";
 import { toDayKey } from "@/lib/date";
 import { safeRead } from "@/lib/runtime-safety";
@@ -363,6 +371,370 @@ export async function getStaffDashboardFeed() {
   ]);
 
   return { recentScans, pendingPrefects, upcomingEvents };
+}
+
+export async function getStaffDashboardAnalytics(role: Role) {
+  const now = new Date();
+  const todayKey = toDayKey(now);
+  const weekStart = startOfDay(subDays(now, 6));
+  const weekEnd = endOfDay(now);
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+
+  const [
+    attendanceRecords,
+    prefects,
+    tasks,
+    duties,
+    classCount,
+    locationCount,
+    upcomingEvents,
+    recentAnnouncements,
+    pendingAbsences,
+    unresolvedAttendance,
+    duplicateScans,
+    invalidScans,
+    recentAudits,
+    auditEntriesLast7Days,
+    staffUsers,
+  ] = await Promise.all([
+    safeRead(
+      "queries.getStaffDashboardAnalytics.attendanceRecords",
+      () =>
+        db.attendanceRecord.findMany({
+          where: {
+            date: {
+              gte: weekStart,
+              lte: weekEnd,
+            },
+          },
+          select: {
+            dayKey: true,
+          },
+        }),
+      () => [],
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.prefects",
+      () =>
+        db.user.findMany({
+          where: {
+            role: Role.PREFECT,
+          },
+          select: {
+            status: true,
+            prefectProfile: {
+              select: {
+                grade: true,
+              },
+            },
+          },
+        }),
+      () => [],
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.tasks",
+      () =>
+        db.task.findMany({
+          select: {
+            status: true,
+          },
+        }),
+      () => [],
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.duties",
+      () =>
+        db.dutyAssignment.findMany({
+          select: {
+            kind: true,
+          },
+        }),
+      () => [],
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.classCount",
+      () =>
+        db.academicClass.count({
+          where: {
+            isActive: true,
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.locationCount",
+      () =>
+        db.dutyLocation.count({
+          where: {
+            isActive: true,
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.upcomingEvents",
+      () =>
+        db.calendarEvent.count({
+          where: {
+            eventDate: {
+              gte: now,
+              lte: addDays(now, 14),
+            },
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.recentAnnouncements",
+      () =>
+        db.announcement.count({
+          where: {
+            publishedAt: {
+              gte: subDays(now, 14),
+            },
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.pendingAbsences",
+      () =>
+        db.absenceRequest.count({
+          where: {
+            status: AbsenceStatus.SUBMITTED,
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.unresolvedAttendance",
+      () =>
+        db.reminder.count({
+          where: {
+            title: "Attendance reason required",
+            dueAt: {
+              gte: todayStart,
+              lte: todayEnd,
+            },
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.duplicateScans",
+      () =>
+        db.attendanceScanLog.count({
+          where: {
+            dayKey: todayKey,
+            status: AttendanceScanStatus.DUPLICATE,
+          },
+        }),
+      () => 0,
+    ),
+    safeRead(
+      "queries.getStaffDashboardAnalytics.invalidScans",
+      () =>
+        db.attendanceScanLog.count({
+          where: {
+            dayKey: todayKey,
+            status: AttendanceScanStatus.INVALID,
+          },
+        }),
+      () => 0,
+    ),
+    role === Role.TEACHER
+      ? []
+      : safeRead(
+          "queries.getStaffDashboardAnalytics.recentAudits",
+          () =>
+            db.auditLog.findMany({
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 5,
+              include: {
+                actor: {
+                  select: {
+                    fullName: true,
+                    role: true,
+                  },
+                },
+              },
+            }),
+          () => [],
+        ),
+    role === Role.TEACHER
+      ? 0
+      : safeRead(
+          "queries.getStaffDashboardAnalytics.auditEntriesLast7Days",
+          () =>
+            db.auditLog.count({
+              where: {
+                createdAt: {
+                  gte: weekStart,
+                  lte: weekEnd,
+                },
+              },
+            }),
+          () => 0,
+        ),
+    role === Role.SUPER_ADMIN
+      ? safeRead(
+          "queries.getStaffDashboardAnalytics.staffUsers",
+          () =>
+            db.user.findMany({
+              where: {
+                role: {
+                  in: [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN],
+                },
+              },
+              select: {
+                role: true,
+                status: true,
+              },
+            }),
+          () => [],
+        )
+      : [],
+  ]);
+
+  const attendanceByDay = attendanceRecords.reduce<Record<string, number>>((acc, record) => {
+    acc[record.dayKey] = (acc[record.dayKey] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const taskStatusCount = tasks.reduce<Record<TaskStatus, number>>(
+    (acc, task) => {
+      acc[task.status] += 1;
+      return acc;
+    },
+    {
+      TODO: 0,
+      IN_PROGRESS: 0,
+      COMPLETED: 0,
+      OVERDUE: 0,
+    },
+  );
+
+  const dutyCount = duties.reduce<Record<DutyAssignmentKind, number>>(
+    (acc, duty) => {
+      acc[duty.kind] += 1;
+      return acc;
+    },
+    {
+      ACADEMIC: 0,
+      LOCATION: 0,
+    },
+  );
+
+  const gradeMix = prefects.reduce<Record<number, number>>((acc, prefect) => {
+    if (
+      prefect.status !== AccountStatus.ACTIVE ||
+      typeof prefect.prefectProfile?.grade !== "number"
+    ) {
+      return acc;
+    }
+
+    acc[prefect.prefectProfile.grade] = (acc[prefect.prefectProfile.grade] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const activePrefects = prefects.filter(
+    (prefect) => prefect.status === AccountStatus.ACTIVE,
+  ).length;
+  const pendingVerification = prefects.filter(
+    (prefect) => prefect.status === AccountStatus.PENDING_VERIFICATION,
+  ).length;
+  const suspendedPrefects = prefects.filter(
+    (prefect) => prefect.status === AccountStatus.SUSPENDED,
+  ).length;
+  const presentToday = attendanceByDay[todayKey] ?? 0;
+  const coverageRate = activePrefects
+    ? Math.round((presentToday / activePrefects) * 100)
+    : 0;
+  const openTasks =
+    taskStatusCount.TODO + taskStatusCount.IN_PROGRESS + taskStatusCount.OVERDUE;
+
+  return {
+    dayKey: todayKey,
+    activePrefects,
+    presentToday,
+    coverageRate,
+    pendingVerification,
+    suspendedPrefects,
+    attendanceTrend: eachDayOfInterval({
+      start: weekStart,
+      end: todayStart,
+    }).map((day) => {
+      const dayKey = toDayKey(day);
+
+      return {
+        dayKey,
+        label: format(day, "EEE"),
+        count: attendanceByDay[dayKey] ?? 0,
+      };
+    }),
+    taskMix: [
+      { label: "To do", value: taskStatusCount.TODO },
+      { label: "In progress", value: taskStatusCount.IN_PROGRESS },
+      { label: "Overdue", value: taskStatusCount.OVERDUE },
+      { label: "Completed", value: taskStatusCount.COMPLETED },
+    ],
+    dutyMix: [
+      { label: "Academic posts", value: dutyCount.ACADEMIC },
+      { label: "Location posts", value: dutyCount.LOCATION },
+    ],
+    gradeMix: Object.entries(gradeMix)
+      .sort((a, b) => Number(a[0]) - Number(b[0]))
+      .map(([grade, value]) => ({
+        label: `Grade ${grade}`,
+        value,
+      })),
+    workload: {
+      openTasks,
+      overdueTasks: taskStatusCount.OVERDUE,
+      pendingAbsences,
+      unresolvedAttendance,
+      duplicateScans,
+      invalidScans,
+      classCount,
+      locationCount,
+      upcomingEvents,
+      recentAnnouncements,
+    },
+    governance:
+      role === Role.TEACHER
+        ? null
+        : {
+            auditEntriesLast7Days,
+            recentAudits: recentAudits.map((entry) => ({
+              id: entry.id,
+              action: entry.action,
+              summary: entry.summary,
+              createdAt: entry.createdAt,
+              actorName: entry.actor?.fullName || "System",
+              actorRole: entry.actor?.role || null,
+            })),
+            staffMix:
+              role === Role.SUPER_ADMIN
+                ? [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN].map((staffRole) => ({
+                    label: staffRole.replaceAll("_", " ").toLowerCase(),
+                    value: staffUsers.filter((member) => member.role === staffRole).length,
+                  }))
+                : [],
+            activeStaff:
+              role === Role.SUPER_ADMIN
+                ? staffUsers.filter((member) => member.status === AccountStatus.ACTIVE).length
+                : 0,
+            suspendedStaff:
+              role === Role.SUPER_ADMIN
+                ? staffUsers.filter(
+                    (member) => member.status === AccountStatus.SUSPENDED,
+                  ).length
+                : 0,
+          },
+  };
 }
 
 export async function getPrefectDashboardFeed(userId: string) {

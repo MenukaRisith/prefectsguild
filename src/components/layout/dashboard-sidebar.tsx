@@ -39,13 +39,19 @@ export function DashboardSidebar({
   const items = dashboardNav.filter((item) => item.roles.includes(user.role as Role));
 
   return (
-    <Sidebar variant="inset">
+    <Sidebar
+      variant="inset"
+      className="p-3 lg:p-4 [&_[data-sidebar=sidebar]]:overflow-hidden [&_[data-sidebar=sidebar]]:rounded-[1.9rem] [&_[data-sidebar=sidebar]]:border [&_[data-sidebar=sidebar]]:border-sidebar-border/70 [&_[data-sidebar=sidebar]]:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--sidebar)_94%,white_6%)_0%,color-mix(in_srgb,var(--sidebar)_92%,var(--accent)_8%)_100%)] [&_[data-sidebar=sidebar]]:shadow-[0_28px_60px_-42px_color-mix(in_srgb,var(--primary)_50%,transparent)]"
+    >
       <SidebarHeader className="gap-4 px-3 py-4">
         <div className="flex items-center justify-between gap-3">
           <BrandMark compact siteIdentity={siteIdentity} guildOnly />
           <ThemeToggle />
         </div>
-        <div className="rounded-[1.25rem] border border-border/70 bg-card/75 p-3 shadow-[0_18px_40px_-34px_color-mix(in_srgb,var(--primary)_45%,transparent)] backdrop-blur">
+        <div className="rounded-[1.5rem] border border-border/70 bg-card/82 p-4 shadow-[0_18px_40px_-34px_color-mix(in_srgb,var(--primary)_45%,transparent)] backdrop-blur">
+          <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-primary/78">
+            Institutional ledger
+          </p>
           <div className="flex items-center gap-3">
             <UserAvatar
               fullName={user.fullName}
@@ -65,9 +71,9 @@ export function DashboardSidebar({
       <SidebarSeparator />
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupLabel>Command deck</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {items.map((item) => {
                 const Icon = item.icon;
                 const isActive =
@@ -78,6 +84,8 @@ export function DashboardSidebar({
                     <SidebarMenuButton
                       isActive={isActive}
                       tooltip={item.label}
+                      size="lg"
+                      className="rounded-[1.35rem] px-3 text-[0.95rem] data-active:bg-primary data-active:text-primary-foreground data-active:shadow-[0_18px_35px_-26px_color-mix(in_srgb,var(--primary)_80%,transparent)] hover:bg-sidebar-accent/80"
                       render={<Link href={item.href} />}
                     >
                       <Icon className="size-4" />
@@ -96,6 +104,11 @@ export function DashboardSidebar({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="px-3 pb-4">
+        <Button asChild variant="secondary" className="w-full rounded-full">
+          <Link href={siteIdentity?.supportWhatsappHref || "#"} target="_blank" rel="noreferrer">
+            Support
+          </Link>
+        </Button>
         <form action={logoutAction} className="w-full">
           <Button type="submit" variant="outline" className="w-full rounded-full">
             Sign out
