@@ -25,6 +25,12 @@ export default async function PrefectsPage() {
         role: Role.PREFECT,
       },
       include: {
+        _count: {
+          select: {
+            attendanceRecords: true,
+            absenceRequests: true,
+          },
+        },
         prefectProfile: true,
         qrPass: true,
         assignedDuties: true,
@@ -75,6 +81,17 @@ export default async function PrefectsPage() {
                         </Button>
                       </form>
                     ) : null}
+                    {prefect.status === "ACTIVE" ? (
+                      <Button asChild variant="outline" className="rounded-full">
+                        <a
+                          href={`/api/pass/${prefect.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Print QR pass
+                        </a>
+                      </Button>
+                    ) : null}
                     {actor.role === Role.SUPER_ADMIN ? (
                       <form action={toggleSuspensionAction}>
                         <input type="hidden" name="userId" value={prefect.id} />
@@ -114,6 +131,18 @@ export default async function PrefectsPage() {
                       Assigned duties
                     </p>
                     <p className="mt-2 font-medium">{prefect.assignedDuties.length}</p>
+                  </div>
+                  <div className="rounded-3xl border border-border/60 bg-background/70 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Attendance logs
+                    </p>
+                    <p className="mt-2 font-medium">{prefect._count.attendanceRecords}</p>
+                  </div>
+                  <div className="rounded-3xl border border-border/60 bg-background/70 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      Absence requests
+                    </p>
+                    <p className="mt-2 font-medium">{prefect._count.absenceRequests}</p>
                   </div>
                 </div>
 

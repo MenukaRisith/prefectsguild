@@ -455,7 +455,7 @@ export async function reviewAbsenceAction(formData: FormData) {
     return;
   }
 
-  await db.absenceRequest.update({
+  const absence = await db.absenceRequest.update({
     where: { id: absenceId },
     data: {
       status,
@@ -463,7 +463,26 @@ export async function reviewAbsenceAction(formData: FormData) {
       reviewedAt: new Date(),
       reviewedById: actor.id,
     },
+    include: {
+      user: {
+        select: {
+          fullName: true,
+        },
+      },
+    },
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "absence.reviewed",
+    targetType: "AbsenceRequest",
+    targetId: absenceId,
+    summary: `${absence.user.fullName} absence was marked ${status.toLowerCase()}.`,
+    meta: {
+      reviewNote,
+    },
   });
 
   revalidatePath("/dashboard/attendance");
+  revalidatePath("/dashboard");
 }
