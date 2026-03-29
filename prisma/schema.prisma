@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PREFECT
+  TEACHER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum DutyAssignmentKind {
+  ACADEMIC
+  LOCATION
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum EventAudience {
+  ALL_PREFECTS
+  STAFF_ONLY
+  CUSTOM
+}
+
+enum ReminderChannel {
+  IN_APP
+  EMAIL
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum AbsenceStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REQUIRES_REASON
+}
+
+enum AnnouncementAudience {
+  ALL
+  PREFECTS
+  STAFF
+  ADMINS
+}
+
+enum AttendanceSource {
+  QR_KIOSK
+  MANUAL
+}
+
+enum AttendanceScanStatus {
+  ACCEPTED
+  DUPLICATE
+  INVALID
+}
+
+model User {
+  id                String               @id @default(cuid())
+  email             String               @unique
+  passwordHash      String
+  fullName          String
+  role              Role
+  status            AccountStatus        @default(PENDING_VERIFICATION)
+  whatsappNumber    String?
+  lastLoginAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  createdById       String?
+  createdBy         User?                @relation("StaffCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers      User[]               @relation("StaffCreator")
+  prefectProfile    PrefectProfile?
+  sessions          Session[]
+  resetTokens       PasswordResetToken[]
+  assignedTasks     Task[]               @relation("TaskAssignee")
+  createdTasks      Task[]               @relation("TaskCreator")
+  createdEvents     CalendarEvent[]      @relation("EventCreator")
+  assignedDuties    DutyAssignment[]     @relation("DutyAssignee")
+  createdDuties     DutyAssignment[]     @relation("DutyCreator")
+  reminders         Reminder[]
+  attendanceRecords AttendanceRecord[]
+  scanLogs          AttendanceScanLog[]  @relation("ScanUser")
+  reviewedAbsences  AbsenceRequest[]     @relation("AbsenceReviewer")
+  absenceRequests   AbsenceRequest[]     @relation("AbsenceRequester")
+  announcements     Announcement[]       @relation("AnnouncementAuthor")
+  qrPass            QRPass?
+  auditEntries      AuditLog[]           @relation("AuditActor")
+
+  @@index([role, status])
+}
+
+model PrefectProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  displayName      String
+  grade            Int
+  section          String?
+  appointedYear    Int
+  profileImagePath String?
+  bio              String?
+  prefectIdentifier String? @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AcademicClass {
+  id          String           @id @default(cuid())
+  grade       Int
+  section     String
+  label       String
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  assignments DutyAssignment[]
+
+  @@unique([grade, section])
+}
+
+model DutyLocation {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  assignments DutyAssignment[]
+}
+
+model DutyAssignment {
+  id             String             @id @default(cuid())
+  assigneeId     String
+  assignedById   String
+  kind           DutyAssignmentKind
+  academicClassId String?
+  dutyLocationId String?
+  title          String
+  notes          String?
+  startsOn       DateTime?
+  endsOn         DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  assignee       User               @relation("DutyAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  assignedBy     User               @relation("DutyCreator", fields: [assignedById], references: [id], onDelete: Cascade)
+  academicClass  AcademicClass?     @relation(fields: [academicClassId], references: [id], onDelete: SetNull)
+  dutyLocation   DutyLocation?      @relation(fields: [dutyLocationId], references: [id], onDelete: SetNull)
+
+  @@index([assigneeId, kind])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueAt       DateTime?
+  assigneeId  String
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignee    User         @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  reminders   Reminder[]
+
+  @@index([assigneeId, status])
+}
+
+model CalendarEvent {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  eventDate   DateTime
+  audience    EventAudience @default(ALL_PREFECTS)
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   User          @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  reminders   Reminder[]
+
+  @@index([eventDate])
+}
+
+model Reminder {
+  id              String           @id @default(cuid())
+  title           String
+  message         String
+  channel         ReminderChannel  @default(IN_APP)
+  status          ReminderStatus   @default(PENDING)
+  dueAt           DateTime
+  sentAt          DateTime?
+  recipientId     String
+  taskId          String?
+  calendarEventId String?
+  absenceRequestId String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  recipient       User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  task            Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  calendarEvent   CalendarEvent?   @relation(fields: [calendarEventId], references: [id], onDelete: SetNull)
+  absenceRequest  AbsenceRequest?  @relation(fields: [absenceRequestId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, status, dueAt])
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  userId      String
+  qrPassId    String?
+  dayKey      String
+  date        DateTime
+  scannedAt   DateTime         @default(now())
+  source      AttendanceSource @default(QR_KIOSK)
+  notes       String?
+  createdAt   DateTime         @default(now())
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qrPass      QRPass?          @relation(fields: [qrPassId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, dayKey])
+  @@index([dayKey])
+}
+
+model AttendanceScanLog {
+  id           String               @id @default(cuid())
+  userId       String?
+  qrPassId     String?
+  dayKey       String
+  scannedAt    DateTime             @default(now())
+  scannerLabel String?
+  status       AttendanceScanStatus
+  message      String
+  user         User?                @relation("ScanUser", fields: [userId], references: [id], onDelete: SetNull)
+  qrPass       QRPass?              @relation(fields: [qrPassId], references: [id], onDelete: SetNull)
+
+  @@index([dayKey, status])
+}
+
+model AbsenceRequest {
+  id           String         @id @default(cuid())
+  userId        String
+  startDate     DateTime
+  endDate       DateTime
+  reason        String
+  status        AbsenceStatus @default(SUBMITTED)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  reviewNote    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation("AbsenceRequester", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy    User?         @relation("AbsenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reminders     Reminder[]
+
+  @@index([userId, status, startDate])
+}
+
+model Announcement {
+  id          String                @id @default(cuid())
+  title       String
+  body        String
+  audience    AnnouncementAudience  @default(ALL)
+  publishedAt DateTime              @default(now())
+  createdById String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  createdBy   User                  @relation("AnnouncementAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model QRPass {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  prefectIdentifier String              @unique
+  tokenVersion      Int                 @default(1)
+  printedAt         DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+  scanLogs          AttendanceScanLog[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  userAgent   String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId     String?
+  action      String
+  targetType  String
+  targetId    String?
+  summary     String
+  meta        Json?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
