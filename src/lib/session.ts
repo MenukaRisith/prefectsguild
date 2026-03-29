@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { hasRole } from "@/lib/permissions";
 
 const sessionCookieName = "kccpg_session";
@@ -17,10 +18,13 @@ function hashToken(token: string) {
 async function getRequestMetadata() {
   const headerStore = await headers();
   const forwardedFor = headerStore.get("x-forwarded-for");
+  const forwardedProto = headerStore.get("x-forwarded-proto");
 
   return {
     userAgent: headerStore.get("user-agent") ?? "Unknown device",
     ipAddress: forwardedFor?.split(",")[0]?.trim() ?? "127.0.0.1",
+    isSecure:
+      forwardedProto === "https" || env.APP_URL.startsWith("https://"),
   };
 }
 
@@ -44,7 +48,7 @@ export async function createSession(userId: string) {
   cookieStore.set(sessionCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: request.isSecure,
     path: "/",
     expires: expiresAt,
   });
@@ -90,7 +94,6 @@ export async function getCurrentUser() {
   });
 
   if (!session || session.expiresAt < new Date()) {
-    cookieStore.delete(sessionCookieName);
     return null;
   }
 
