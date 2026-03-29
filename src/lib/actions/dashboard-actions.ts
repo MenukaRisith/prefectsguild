@@ -12,12 +12,19 @@ import {
   dutyAssignmentSchema,
   eventSchema,
   locationSchema,
+  platformSettingsSchema,
   staffCreationSchema,
+  smtpSettingsSchema,
   taskSchema,
 } from "@/lib/schemas";
 import { hashPassword } from "@/lib/password";
 import { assignmentRoles, dutyManagerRoles, verificationRoles } from "@/lib/permissions";
 import { requireRole, requireUser } from "@/lib/session";
+import {
+  encryptSystemSecret,
+  getSystemSettingsRecord,
+  upsertSystemSettings,
+} from "@/lib/system-settings";
 import {
   ensureQrPassForUser,
   queueCalendarReminders,
@@ -80,6 +87,104 @@ export async function createStaffAction(
 
   revalidatePath("/dashboard/staff");
   return { success: true, message: "Staff account created." };
+}
+
+export async function updatePlatformSettingsAction(
+  _previousState: ActionState = initialActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  void _previousState;
+  const actor = await requireRole([Role.SUPER_ADMIN]);
+  const parsed = platformSettingsSchema.safeParse(formValues(formData));
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      errors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  await upsertSystemSettings({
+    schoolName: parsed.data.schoolName,
+    shortName: parsed.data.shortName,
+    motto: parsed.data.motto,
+    footerLabel: parsed.data.footerLabel,
+    supportWhatsappNumber: parsed.data.supportWhatsappNumber,
+    appUrl: parsed.data.appUrl,
+    attendanceCutoffHour: parsed.data.attendanceCutoffHour,
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "settings.platform_updated",
+    targetType: "SystemSetting",
+    targetId: "1",
+    summary: "Platform settings were updated.",
+  });
+
+  revalidatePath("/");
+  revalidatePath("/login");
+  revalidatePath("/register");
+  revalidatePath("/forgot-password");
+  revalidatePath("/reset-password");
+  revalidatePath("/scan");
+  revalidatePath("/setup");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/settings");
+
+  return { success: true, message: "Platform settings saved." };
+}
+
+export async function updateSmtpSettingsAction(
+  _previousState: ActionState = initialActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  void _previousState;
+  const actor = await requireRole([Role.SUPER_ADMIN]);
+  const parsed = smtpSettingsSchema.safeParse(formValues(formData));
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      errors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const existing = await getSystemSettingsRecord();
+  const smtpPassEncrypted = parsed.data.useCustomSmtp
+    ? parsed.data.smtpPass
+      ? encryptSystemSecret(parsed.data.smtpPass)
+      : existing?.smtpPassEncrypted ?? null
+    : null;
+
+  await upsertSystemSettings({
+    useCustomSmtp: parsed.data.useCustomSmtp,
+    smtpHost: parsed.data.useCustomSmtp ? parsed.data.smtpHost ?? "" : null,
+    smtpPort: parsed.data.useCustomSmtp ? parsed.data.smtpPort : null,
+    smtpUser: parsed.data.useCustomSmtp ? parsed.data.smtpUser ?? "" : null,
+    smtpPassEncrypted,
+    smtpFrom: parsed.data.useCustomSmtp ? parsed.data.smtpFrom ?? "" : null,
+    smtpSecure: parsed.data.useCustomSmtp ? parsed.data.smtpSecure : null,
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "settings.smtp_updated",
+    targetType: "SystemSetting",
+    targetId: "1",
+    summary: parsed.data.useCustomSmtp
+      ? "Custom SMTP settings were updated."
+      : "Custom SMTP was disabled and environment fallback is active.",
+  });
+
+  revalidatePath("/dashboard/settings");
+
+  return {
+    success: true,
+    message: parsed.data.useCustomSmtp
+      ? "Custom SMTP settings saved."
+      : "Custom SMTP disabled. Environment email settings will be used.",
+  };
 }
 
 export async function verifyPrefectAction(formData: FormData) {

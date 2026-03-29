@@ -5,6 +5,24 @@ const passwordSchema = z
   .min(8, "Password must be at least 8 characters.")
   .max(72, "Password is too long.");
 
+const checkboxSchema = z.preprocess(
+  (value) => value === "on" || value === "true" || value === true,
+  z.boolean(),
+);
+
+const optionalText = (max: number) =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return undefined;
+      }
+
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : undefined;
+    },
+    z.string().max(max).optional(),
+  );
+
 export const setupSchema = z.object({
   fullName: z.string().min(3, "Full name is required."),
   email: z.email("Enter a valid email address."),
@@ -104,6 +122,65 @@ export const absenceSchema = z.object({
   endDate: z.string().min(1, "End date is required."),
   reason: z.string().min(10, "Reason must be at least 10 characters.").max(800),
 });
+
+export const platformSettingsSchema = z.object({
+  schoolName: z.string().min(3, "School name is required.").max(100),
+  shortName: z.string().min(2, "Short name is required.").max(50),
+  motto: z.string().min(2, "Motto is required.").max(60),
+  footerLabel: z.string().min(3, "Footer label is required.").max(90),
+  supportWhatsappNumber: z.string().min(7, "Support WhatsApp number is required.").max(30),
+  appUrl: z.url("Enter a valid public app URL."),
+  attendanceCutoffHour: z.coerce.number().int().min(0).max(23),
+});
+
+export const smtpSettingsSchema = z
+  .object({
+    useCustomSmtp: checkboxSchema,
+    smtpHost: optionalText(120),
+    smtpPort: z.coerce.number().int().min(1).max(65535).default(587),
+    smtpUser: optionalText(120),
+    smtpPass: optionalText(160),
+    smtpFrom: optionalText(160),
+    smtpSecure: checkboxSchema,
+    existingPasswordConfigured: checkboxSchema,
+  })
+  .superRefine((value, context) => {
+    if (!value.useCustomSmtp) {
+      return;
+    }
+
+    if (!value.smtpHost) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "SMTP host is required when custom SMTP is enabled.",
+        path: ["smtpHost"],
+      });
+    }
+
+    if (!value.smtpUser) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "SMTP username is required when custom SMTP is enabled.",
+        path: ["smtpUser"],
+      });
+    }
+
+    if (!value.smtpFrom) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "From address is required when custom SMTP is enabled.",
+        path: ["smtpFrom"],
+      });
+    }
+
+    if (!value.smtpPass && !value.existingPasswordConfigured) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide an SMTP password the first time custom SMTP is enabled.",
+        path: ["smtpPass"],
+      });
+    }
+  });
 
 export const passwordResetRequestSchema = z.object({
   email: z.email("Enter a valid email address."),

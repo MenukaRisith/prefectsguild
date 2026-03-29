@@ -23,14 +23,17 @@ import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { dashboardNav } from "@/lib/constants";
 import type { SessionUser } from "@/lib/session";
+import type { SiteIdentity } from "@/lib/system-settings";
 import { logoutAction } from "@/lib/actions/auth-actions";
 
 export function DashboardSidebar({
   user,
   reminderCount,
+  siteIdentity,
 }: {
   user: NonNullable<SessionUser>;
   reminderCount: number;
+  siteIdentity?: SiteIdentity;
 }) {
   const pathname = usePathname();
   const items = dashboardNav.filter((item) => item.roles.includes(user.role as Role));
@@ -39,7 +42,7 @@ export function DashboardSidebar({
     <Sidebar variant="inset">
       <SidebarHeader className="gap-4 px-3 py-4">
         <div className="flex items-center justify-between gap-3">
-          <BrandMark compact />
+          <BrandMark compact siteIdentity={siteIdentity} />
           <ThemeToggle />
         </div>
         <div className="rounded-[1.25rem] border border-border/70 bg-card/75 p-3 shadow-[0_18px_40px_-34px_color-mix(in_srgb,var(--primary)_45%,transparent)] backdrop-blur">

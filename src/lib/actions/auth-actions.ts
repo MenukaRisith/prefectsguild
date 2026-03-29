@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AccountStatus, Role } from "@prisma/client";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
 import { logAudit } from "@/lib/audit";
 import { initialActionState, type ActionState } from "@/lib/action-state";
 import {
@@ -28,6 +27,7 @@ import {
 } from "@/lib/session";
 import { saveProfileImage } from "@/lib/storage";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { getSystemSettings } from "@/lib/system-settings";
 
 function formValues(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -266,7 +266,8 @@ export async function requestPasswordResetAction(
 
   if (user) {
     const token = await createPasswordResetToken(user.id);
-    const resetUrl = `${env.APP_URL}/reset-password?token=${token}`;
+    const settings = await getSystemSettings();
+    const resetUrl = `${settings.appUrl}/reset-password?token=${token}`;
     await sendPasswordResetEmail(user.email, resetUrl);
   }
 

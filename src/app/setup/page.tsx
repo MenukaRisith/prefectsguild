@@ -2,15 +2,18 @@ import { ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { SetupForm } from "@/components/forms/auth-forms";
-import { siteConfig } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function SetupPage() {
-  const hasSuperAdmin = await db.user.count({
-    where: { role: "SUPER_ADMIN" },
-  });
+  const [hasSuperAdmin, settings] = await Promise.all([
+    db.user.count({
+      where: { role: "SUPER_ADMIN" },
+    }),
+    getSystemSettings(),
+  ]);
 
   if (hasSuperAdmin > 0) {
     redirect("/login");
@@ -20,10 +23,10 @@ export default async function SetupPage() {
     <main className="hero-orbit mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-14 sm:px-6 lg:py-20">
       <div className="grid w-full gap-8 lg:grid-cols-[1fr_0.88fr] lg:items-center">
         <div className="space-y-8 motion-rise">
-          <BrandMark />
+          <BrandMark siteIdentity={settings} />
           <div className="space-y-4">
             <div className="inline-flex rounded-full border border-border/70 bg-muted/45 px-4 py-2 text-[0.72rem] font-semibold tracking-[0.24em] text-primary">
-              {siteConfig.motto}
+              {settings.motto}
             </div>
             <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">
               Initial platform setup

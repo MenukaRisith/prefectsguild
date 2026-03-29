@@ -20,6 +20,11 @@ import {
 } from "@/lib/actions/auth-actions";
 import { siteConfig } from "@/lib/constants";
 
+type SupportContact = {
+  supportWhatsappNumber: string;
+  supportWhatsappHref: string;
+};
+
 function FieldError({
   errors,
   name,
@@ -56,7 +61,10 @@ function NativeSelect({
   );
 }
 
-function IssueHelpLink() {
+function IssueHelpLink({
+  supportWhatsappNumber,
+  supportWhatsappHref,
+}: SupportContact) {
   return (
     <div className="rounded-2xl border border-border/70 bg-muted/45 px-4 py-3 text-sm text-muted-foreground">
       <div className="flex items-start gap-3">
@@ -68,12 +76,12 @@ function IssueHelpLink() {
           <p>
             Contact support on{" "}
             <a
-              href={siteConfig.supportWhatsappHref}
+              href={supportWhatsappHref}
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-primary underline-offset-4 hover:underline"
             >
-              WhatsApp {siteConfig.supportWhatsappNumber}
+              WhatsApp {supportWhatsappNumber}
             </a>
             .
           </p>
@@ -126,7 +134,10 @@ export function SetupForm() {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({
+  supportWhatsappNumber = siteConfig.supportWhatsappNumber,
+  supportWhatsappHref = siteConfig.supportWhatsappHref,
+}: Partial<SupportContact>) {
   const [state, action] = useActionState(loginAction, initialActionState);
 
   return (
@@ -161,14 +172,20 @@ export function LoginForm() {
               New prefect registration
             </Link>
           </div>
-          <IssueHelpLink />
+          <IssueHelpLink
+            supportWhatsappNumber={supportWhatsappNumber}
+            supportWhatsappHref={supportWhatsappHref}
+          />
         </form>
       </CardContent>
     </Card>
   );
 }
 
-export function RegisterForm() {
+export function RegisterForm({
+  supportWhatsappNumber = siteConfig.supportWhatsappNumber,
+  supportWhatsappHref = siteConfig.supportWhatsappHref,
+}: Partial<SupportContact>) {
   const [state, action] = useActionState(registerPrefectAction, initialActionState);
 
   return (
@@ -252,7 +269,10 @@ export function RegisterForm() {
             <FieldError errors={state.errors} name="bio" />
           </div>
           <div className="md:col-span-2">
-            <IssueHelpLink />
+            <IssueHelpLink
+              supportWhatsappNumber={supportWhatsappNumber}
+              supportWhatsappHref={supportWhatsappHref}
+            />
           </div>
           <div className="md:col-span-2">
             <SubmitButton className="w-full rounded-full" pendingLabel="Submitting registration...">

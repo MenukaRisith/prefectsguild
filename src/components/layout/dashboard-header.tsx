@@ -1,9 +1,9 @@
 import { BellRing } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import { siteConfig } from "@/lib/constants";
+import { getSystemSettings } from "@/lib/system-settings";
 
-export function DashboardHeader({
+export async function DashboardHeader({
   title,
   description,
   reminderCount,
@@ -12,6 +12,8 @@ export function DashboardHeader({
   description: string;
   reminderCount: number;
 }) {
+  const settings = await getSystemSettings();
+
   return (
     <div className="sticky top-0 z-20 border-b border-border/70 bg-background/82 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -19,7 +21,7 @@ export function DashboardHeader({
           <SidebarTrigger className="mt-1 lg:hidden" />
           <div>
             <p className="mb-2 text-[0.68rem] font-semibold tracking-[0.22em] text-primary/85">
-              {siteConfig.motto}
+              {settings.motto}
             </p>
             <h1 className="font-heading text-2xl font-semibold tracking-tight">
               {title}

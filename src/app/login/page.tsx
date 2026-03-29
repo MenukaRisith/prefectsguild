@@ -2,8 +2,8 @@ import { ArrowRight, ShieldCheck, QrCode, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { LoginForm } from "@/components/forms/auth-forms";
-import { siteConfig } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/session";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,10 @@ const loginHighlights = [
 ];
 
 export default async function LoginPage() {
-  const user = await getCurrentUser();
+  const [user, settings] = await Promise.all([
+    getCurrentUser(),
+    getSystemSettings(),
+  ]);
 
   if (user) {
     redirect("/dashboard");
@@ -36,19 +39,19 @@ export default async function LoginPage() {
     <main className="hero-orbit mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-14 sm:px-6 lg:py-20">
       <div className="grid w-full gap-8 lg:grid-cols-[1fr_0.88fr] lg:items-center">
         <div className="space-y-8 motion-rise">
-          <BrandMark />
+          <BrandMark siteIdentity={settings} />
           <div className="space-y-4">
             <div className="inline-flex rounded-full border border-border/70 bg-muted/45 px-4 py-2 text-[0.72rem] font-semibold tracking-[0.24em] text-primary">
-              {siteConfig.motto}
+              {settings.motto}
             </div>
             <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">
               Dashboard access
             </p>
             <h1 className="max-w-2xl font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-              Sign in to manage prefect operations with a cleaner workflow.
+              Sign in to the prefect management dashboard.
             </h1>
             <p className="max-w-xl text-base leading-8 text-muted-foreground">
-              One secure login opens attendance tracking, duty planning, QR pass printing, reminders, and administration for the Kekirawa Central College Prefects Guild.
+              Use one secure account for attendance, duties, QR passes, reminders, and school administration.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -84,7 +87,10 @@ export default async function LoginPage() {
             Professional access for prefects, teachers, admins, and super admins.
           </div>
         </div>
-        <LoginForm />
+        <LoginForm
+          supportWhatsappNumber={settings.supportWhatsappNumber}
+          supportWhatsappHref={settings.supportWhatsappHref}
+        />
       </div>
     </main>
   );

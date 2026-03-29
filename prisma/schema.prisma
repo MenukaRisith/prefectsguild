@@ -305,6 +305,26 @@ model QRPass {
   scanLogs          AttendanceScanLog[]
 }
 
+model SystemSetting {
+  id                    Int      @id
+  schoolName            String   @default("Kekirawa Central College Prefects Guild")
+  shortName             String   @default("KCC Prefects Guild")
+  motto                 String   @default("DUTY FIRST")
+  footerLabel           String   @default("Built by RAWANZ PREFECTS GUILD")
+  supportWhatsappNumber String   @default("0719089448")
+  appUrl                String?
+  attendanceCutoffHour  Int      @default(8)
+  useCustomSmtp         Boolean  @default(false)
+  smtpHost              String?
+  smtpPort              Int?
+  smtpUser              String?
+  smtpPassEncrypted     String?
+  smtpFrom              String?
+  smtpSecure            Boolean?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
 model Session {
   id         String   @id @default(cuid())
   userId      String
@@ -345,3 +365,5 @@ model AuditLog {
   @@index([targetType, targetId])
   @@index([createdAt])
 }
+
+

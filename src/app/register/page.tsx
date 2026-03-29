@@ -2,8 +2,8 @@ import { Clock3, ShieldCheck, Upload } from "lucide-react";
 import { redirect } from "next/navigation";
 import { BrandMark } from "@/components/brand-mark";
 import { RegisterForm } from "@/components/forms/auth-forms";
-import { siteConfig } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/session";
+import { getSystemSettings } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,10 @@ const registrationNotes = [
 ];
 
 export default async function RegisterPage() {
-  const user = await getCurrentUser();
+  const [user, settings] = await Promise.all([
+    getCurrentUser(),
+    getSystemSettings(),
+  ]);
 
   if (user) {
     redirect("/dashboard");
@@ -36,10 +39,10 @@ export default async function RegisterPage() {
     <main className="hero-orbit mx-auto min-h-screen w-full max-w-7xl px-4 py-14 sm:px-6 lg:py-20">
       <div className="grid gap-10 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
         <div className="space-y-8 motion-rise">
-          <BrandMark />
+          <BrandMark siteIdentity={settings} />
           <div className="space-y-4">
             <div className="inline-flex rounded-full border border-border/70 bg-muted/45 px-4 py-2 text-[0.72rem] font-semibold tracking-[0.24em] text-primary">
-              {siteConfig.motto}
+              {settings.motto}
             </div>
             <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">
               New prefect onboarding
@@ -82,7 +85,10 @@ export default async function RegisterPage() {
             })}
           </div>
         </div>
-        <RegisterForm />
+        <RegisterForm
+          supportWhatsappNumber={settings.supportWhatsappNumber}
+          supportWhatsappHref={settings.supportWhatsappHref}
+        />
       </div>
     </main>
   );

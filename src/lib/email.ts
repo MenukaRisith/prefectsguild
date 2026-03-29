@@ -1,14 +1,14 @@
 import nodemailer from "nodemailer";
-import { env, isSmtpConfigured } from "@/lib/env";
+import { getSmtpRuntimeConfig } from "@/lib/system-settings";
 
-function createTransport() {
+function createTransport(smtp: Awaited<ReturnType<typeof getSmtpRuntimeConfig>>) {
   return nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_PORT === 465,
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
     auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS,
+      user: smtp.user,
+      pass: smtp.pass,
     },
   });
 }
@@ -19,15 +19,17 @@ export async function sendEmail(options: {
   html: string;
   text?: string;
 }) {
-  if (!isSmtpConfigured) {
+  const smtp = await getSmtpRuntimeConfig();
+
+  if (!smtp.configured) {
     console.info(`SMTP not configured. Email skipped for ${options.to}.`);
     return false;
   }
 
-  const transport = createTransport();
+  const transport = createTransport(smtp);
 
   await transport.sendMail({
-    from: env.SMTP_FROM,
+    from: smtp.from,
     to: options.to,
     subject: options.subject,
     html: options.html,
