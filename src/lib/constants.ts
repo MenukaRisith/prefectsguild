@@ -18,6 +18,10 @@ import type { Role } from "@prisma/client";
 export const siteConfig = {
   name: "Kekirawa Central College Prefects Guild",
   shortName: "KCC Prefects Guild",
+  motto: "DUTY FIRST",
+  supportWhatsappNumber: "0719089448",
+  supportWhatsappHref:
+    "https://wa.me/94719089448?text=Hello%2C%20I%20need%20help%20with%20the%20KCC%20Prefects%20Guild%20system.",
   footerLabel: "Built by RAWANZ PREFECTS GUILD",
 };
 
@@ -104,9 +108,9 @@ export const dashboardNav: NavItem[] = [
 ];
 
 export const publicHighlights = [
-  "Role-based dashboards for prefects, teachers, admins, and super admins.",
-  "Secure QR attendance with printable ID passes and absence follow-up.",
-  "Duty, task, reminder, and calendar coordination built for school operations.",
+  "Verified onboarding with restricted access until prefect approval is complete.",
+  "Signed QR attendance, printable passes, and structured absence follow-up.",
+  "Duty rosters, reminders, and role-safe dashboards built for school operations.",
 ];
 
 export const attendanceWarningMessage =

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { useActionState } from "react";
 import { ActionFeedback } from "@/components/action-feedback";
 import { SubmitButton } from "@/components/submit-button";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { initialActionState } from "@/lib/action-state";
 import {
   loginAction,
   registerPrefectAction,
@@ -16,7 +18,7 @@ import {
   resetPasswordAction,
   setupSuperAdminAction,
 } from "@/lib/actions/auth-actions";
-import { initialActionState } from "@/lib/action-state";
+import { siteConfig } from "@/lib/constants";
 
 function FieldError({
   errors,
@@ -47,10 +49,37 @@ function NativeSelect({
     <select
       name={name}
       defaultValue={defaultValue}
-      className="flex h-11 w-full rounded-2xl border border-input bg-background px-3 text-sm shadow-sm outline-none ring-0 transition focus:border-ring"
+      className="flex h-11 w-full rounded-xl border border-input bg-input/60 px-3.5 text-sm text-foreground outline-none transition focus:border-primary/35 focus:bg-background focus:ring-3 focus:ring-ring/20"
     >
       {children}
     </select>
+  );
+}
+
+function IssueHelpLink() {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-muted/45 px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+          <MessageCircle className="size-4" />
+        </div>
+        <div className="space-y-1">
+          <p className="font-medium text-foreground">Need help with account access?</p>
+          <p>
+            Contact support on{" "}
+            <a
+              href={siteConfig.supportWhatsappHref}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              WhatsApp {siteConfig.supportWhatsappNumber}
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -58,7 +87,7 @@ export function SetupForm() {
   const [state, action] = useActionState(setupSuperAdminAction, initialActionState);
 
   return (
-    <Card className="border-border/70 bg-card/80 shadow-xl shadow-primary/5">
+    <Card className="motion-rise">
       <CardHeader>
         <CardTitle>Create the first super admin</CardTitle>
         <CardDescription>
@@ -101,7 +130,7 @@ export function LoginForm() {
   const [state, action] = useActionState(loginAction, initialActionState);
 
   return (
-    <Card className="border-border/70 bg-card/80 shadow-xl shadow-primary/5">
+    <Card className="motion-rise motion-rise-delay-1">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
@@ -109,7 +138,7 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="space-y-4">
+        <form action={action} className="space-y-5">
           <ActionFeedback state={state} />
           <div className="space-y-2">
             <Label htmlFor="login-email">Email</Label>
@@ -124,7 +153,7 @@ export function LoginForm() {
           <SubmitButton className="w-full rounded-full" pendingLabel="Signing in...">
             Sign in
           </SubmitButton>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
             <Link href="/forgot-password" className="transition hover:text-foreground">
               Forgot password?
             </Link>
@@ -132,6 +161,7 @@ export function LoginForm() {
               New prefect registration
             </Link>
           </div>
+          <IssueHelpLink />
         </form>
       </CardContent>
     </Card>
@@ -142,7 +172,7 @@ export function RegisterForm() {
   const [state, action] = useActionState(registerPrefectAction, initialActionState);
 
   return (
-    <Card className="border-border/70 bg-card/80 shadow-xl shadow-primary/5">
+    <Card className="motion-rise motion-rise-delay-1">
       <CardHeader>
         <CardTitle>Prefect registration</CardTitle>
         <CardDescription>
@@ -150,7 +180,7 @@ export function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="grid gap-4 md:grid-cols-2">
+        <form action={action} className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
             <ActionFeedback state={state} />
           </div>
@@ -192,7 +222,12 @@ export function RegisterForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="register-appointedYear">Year appointed</Label>
-            <Input id="register-appointedYear" name="appointedYear" type="number" defaultValue={new Date().getFullYear()} />
+            <Input
+              id="register-appointedYear"
+              name="appointedYear"
+              type="number"
+              defaultValue={new Date().getFullYear()}
+            />
             <FieldError errors={state.errors} name="appointedYear" />
           </div>
           <div className="space-y-2">
@@ -203,6 +238,9 @@ export function RegisterForm() {
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="register-profileImage">Profile picture</Label>
             <Input id="register-profileImage" name="profileImage" type="file" accept="image/png,image/jpeg,image/webp" />
+            <p className="text-xs leading-5 text-muted-foreground">
+              Upload a clear headshot. It will be stored on the school server and used for your profile and pass.
+            </p>
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="register-bio">Short note</Label>
@@ -212,6 +250,9 @@ export function RegisterForm() {
               placeholder="Add anything useful for the admin verification team."
             />
             <FieldError errors={state.errors} name="bio" />
+          </div>
+          <div className="md:col-span-2">
+            <IssueHelpLink />
           </div>
           <div className="md:col-span-2">
             <SubmitButton className="w-full rounded-full" pendingLabel="Submitting registration...">
@@ -228,12 +269,10 @@ export function ForgotPasswordForm() {
   const [state, action] = useActionState(requestPasswordResetAction, initialActionState);
 
   return (
-    <Card className="border-border/70 bg-card/80 shadow-xl shadow-primary/5">
+    <Card className="motion-rise">
       <CardHeader>
         <CardTitle>Reset password</CardTitle>
-        <CardDescription>
-          We’ll email a reset link if your account exists.
-        </CardDescription>
+        <CardDescription>We&apos;ll email a reset link if your account exists.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">
@@ -259,7 +298,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
   const [state, action] = useActionState(resetPasswordAction, initialActionState);
 
   return (
-    <Card className="border-border/70 bg-card/80 shadow-xl shadow-primary/5">
+    <Card className="motion-rise">
       <CardHeader>
         <CardTitle>Create a new password</CardTitle>
         <CardDescription>Use a strong password you do not reuse elsewhere.</CardDescription>

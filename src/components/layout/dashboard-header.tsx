@@ -1,6 +1,7 @@
 import { BellRing } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { siteConfig } from "@/lib/constants";
 
 export function DashboardHeader({
   title,
@@ -12,11 +13,14 @@ export function DashboardHeader({
   reminderCount: number;
 }) {
   return (
-    <div className="sticky top-0 z-20 border-b border-border/60 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-20 border-b border-border/70 bg-background/82 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
           <SidebarTrigger className="mt-1 lg:hidden" />
           <div>
+            <p className="mb-2 text-[0.68rem] font-semibold tracking-[0.22em] text-primary/85">
+              {siteConfig.motto}
+            </p>
             <h1 className="font-heading text-2xl font-semibold tracking-tight">
               {title}
             </h1>
@@ -27,7 +31,7 @@ export function DashboardHeader({
         </div>
         <Badge
           variant="secondary"
-          className="w-fit shrink-0 rounded-full bg-background px-3 py-1 shadow-sm"
+          className="w-fit shrink-0 rounded-full bg-background/85 px-3 py-1"
         >
           <BellRing className="size-3.5" />
           {reminderCount} live reminders

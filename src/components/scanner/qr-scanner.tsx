@@ -104,12 +104,12 @@ export function QrScanner() {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-      <Card className="rounded-[1.75rem] border-border/70">
+      <Card className="motion-rise motion-rise-delay-1">
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Live camera scanner</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-black">
+          <div className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-black">
             <video ref={videoRef} className="aspect-video w-full object-cover" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -128,21 +128,21 @@ export function QrScanner() {
             )}
           </div>
           {error ? (
-            <div className="rounded-2xl border border-rose-500/30 bg-rose-500/8 p-4 text-sm text-rose-800 dark:text-rose-100">
+            <div className="rounded-[1rem] border border-rose-500/30 bg-rose-500/8 p-4 text-sm text-rose-800 dark:text-rose-100">
               {error}
             </div>
           ) : null}
         </CardContent>
       </Card>
 
-      <Card className="rounded-[1.75rem] border-border/70">
+      <Card className="motion-rise motion-rise-delay-2">
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Scan result</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {result ? (
             <div
-              className={`rounded-3xl border p-5 ${
+              className={`rounded-[1.1rem] border p-5 ${
                 result.status === "accepted"
                   ? "border-emerald-500/30 bg-emerald-500/8"
                   : result.status === "duplicate"
@@ -167,12 +167,12 @@ export function QrScanner() {
               ) : null}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-border/70 bg-muted/30 p-5 text-sm text-muted-foreground">
+            <div className="rounded-[1.1rem] border border-dashed border-border/70 bg-muted/30 p-5 text-sm text-muted-foreground">
               Waiting for the first successful scan.
             </div>
           )}
 
-          <div className="rounded-3xl border border-border/60 bg-background/70 p-5">
+          <div className="rounded-[1.1rem] border border-border/70 bg-background/70 p-5">
             <h3 className="font-medium">Manual token / USB scanner fallback</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               If the kiosk uses a hardware scanner, paste or type the QR token and submit it here.

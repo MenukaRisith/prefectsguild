@@ -17,7 +17,7 @@ export default async function DashboardLayout({
     <SidebarProvider defaultOpen>
       <DashboardSidebar user={user} reminderCount={reminderCount} />
       <SidebarInset className="min-h-svh bg-transparent">
-        <div className="min-h-svh bg-[radial-gradient(circle_at_top_right,rgba(181,161,92,0.12),transparent_25%),linear-gradient(to_bottom,transparent,rgba(20,32,38,0.03))]">
+        <div className="min-h-svh bg-[radial-gradient(circle_at_top_right,color-mix(in_srgb,var(--accent)_14%,transparent),transparent_22%),radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--primary)_8%,transparent),transparent_28%),linear-gradient(180deg,transparent,color-mix(in_srgb,var(--primary)_3%,transparent))]">
           {children}
         </div>
       </SidebarInset>

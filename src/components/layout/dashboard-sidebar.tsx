@@ -42,7 +42,7 @@ export function DashboardSidebar({
           <BrandMark compact />
           <ThemeToggle />
         </div>
-        <div className="rounded-3xl border border-border/70 bg-background/60 p-3">
+        <div className="rounded-[1.25rem] border border-border/70 bg-card/75 p-3 shadow-[0_18px_40px_-34px_color-mix(in_srgb,var(--primary)_45%,transparent)] backdrop-blur">
           <div className="flex items-center gap-3">
             <UserAvatar
               fullName={user.fullName}

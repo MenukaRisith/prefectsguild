@@ -12,7 +12,7 @@ export function BrandMark({
 }) {
   return (
     <Link href="/" className={cn("flex items-center gap-3", className)}>
-      <div className="flex size-12 items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm shadow-primary/10">
+      <div className="flex size-12 items-center justify-center overflow-hidden rounded-[1rem] border border-border/70 bg-card/90 shadow-[0_16px_30px_-24px_color-mix(in_srgb,var(--primary)_60%,transparent)]">
         <Image
           src="/logo.png"
           alt="Kekirawa Central College Prefects Guild logo"
@@ -29,6 +29,11 @@ export function BrandMark({
         <p className="font-heading text-lg font-semibold tracking-tight">
           {siteConfig.shortName}
         </p>
+        {!compact ? (
+          <p className="text-[0.7rem] font-semibold tracking-[0.22em] text-primary/85">
+            {siteConfig.motto}
+          </p>
+        ) : null}
       </div>
     </Link>
   );
