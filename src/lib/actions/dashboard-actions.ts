@@ -5,6 +5,7 @@ import { AccountStatus, AbsenceStatus, Role, TaskStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { initialActionState, type ActionState } from "@/lib/action-state";
+import { parseTimeInputToMinutes } from "@/lib/attendance-windows";
 import {
   announcementSchema,
   absenceSchema,
@@ -123,7 +124,18 @@ export async function updatePlatformSettingsAction(
           footerLabel: parsed.data.footerLabel,
           supportWhatsappNumber: parsed.data.supportWhatsappNumber,
           appUrl: parsed.data.appUrl,
-          attendanceCutoffHour: parsed.data.attendanceCutoffHour,
+          attendanceCheckInStartMinute: parseTimeInputToMinutes(
+            parsed.data.attendanceCheckInStartTime,
+          ),
+          attendanceCheckInEndMinute: parseTimeInputToMinutes(
+            parsed.data.attendanceCheckInEndTime,
+          ),
+          attendanceCheckOutStartMinute: parseTimeInputToMinutes(
+            parsed.data.attendanceCheckOutStartTime,
+          ),
+          attendanceCheckOutEndMinute: parseTimeInputToMinutes(
+            parsed.data.attendanceCheckOutEndTime,
+          ),
         });
       } catch (error) {
         return {

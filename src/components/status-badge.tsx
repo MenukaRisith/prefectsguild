@@ -17,6 +17,8 @@ const variants = {
   ACCEPTED: "border-emerald-500/25 bg-emerald-500/12 text-emerald-800 dark:text-emerald-200",
   DUPLICATE: "border-amber-500/25 bg-amber-500/12 text-amber-800 dark:text-amber-200",
   INVALID: "border-rose-500/25 bg-rose-500/12 text-rose-800 dark:text-rose-200",
+  OUTSIDE_WINDOW:
+    "border-sky-500/25 bg-sky-500/12 text-sky-800 dark:text-sky-200",
   TODO: "border-border/80 bg-background/80 text-foreground",
   IN_PROGRESS: "border-primary/25 bg-primary/12 text-primary dark:text-primary-foreground",
   COMPLETED: "border-emerald-500/25 bg-emerald-500/12 text-emerald-800 dark:text-emerald-200",

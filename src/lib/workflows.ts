@@ -13,6 +13,7 @@ import {
   ReminderStatus,
   Role,
 } from "@prisma/client";
+import { getAttendanceScanWindow } from "@/lib/attendance-windows";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { toDayKey } from "@/lib/date";
@@ -20,6 +21,7 @@ import { buildPrefectIdentifier, createQrDataUrl, signQrToken, verifyQrToken } f
 import { buildPrefectPassPdf } from "@/lib/pdf";
 import { attendanceWarningMessage } from "@/lib/constants";
 import { sendReminderEmail } from "@/lib/email";
+import { getSystemSettings } from "@/lib/system-settings";
 
 function hashResetToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -309,6 +311,29 @@ export async function runAttendanceAudit(date = new Date()) {
 }
 
 export async function scanAttendanceByToken(token: string, scannerLabel?: string) {
+  const now = new Date();
+  const dayKey = toDayKey(now);
+  const settings = await getSystemSettings();
+  const scanWindow = getAttendanceScanWindow(settings, now);
+
+  if (scanWindow.mode === "closed") {
+    await db.attendanceScanLog.create({
+      data: {
+        dayKey,
+        scannerLabel,
+        status: "OUTSIDE_WINDOW",
+        message: scanWindow.message,
+      },
+    });
+
+    return {
+      status: "closed",
+      mode: "closed",
+      message: scanWindow.message,
+      prefect: null,
+    } as const;
+  }
+
   try {
     const verified = await verifyQrToken(token);
 
@@ -335,9 +360,6 @@ export async function scanAttendanceByToken(token: string, scannerLabel?: string
       throw new Error("QR pass is not active.");
     }
 
-    const now = new Date();
-    const dayKey = toDayKey(now);
-
     const existing = await db.attendanceRecord.findFirst({
       where: {
         userId: qrPass.userId,
@@ -345,10 +367,40 @@ export async function scanAttendanceByToken(token: string, scannerLabel?: string
       },
     });
 
-    const status: AttendanceScanStatus = existing ? "DUPLICATE" : "ACCEPTED";
-    const message = existing
-      ? "Attendance was already recorded earlier today."
-      : "Attendance marked successfully.";
+    let status: AttendanceScanStatus = "ACCEPTED";
+    let message = "Attendance marked successfully.";
+
+    if (scanWindow.mode === "check_in") {
+      if (existing) {
+        status = "DUPLICATE";
+        message = "Arrival was already recorded earlier today.";
+      } else {
+        await db.attendanceRecord.create({
+          data: {
+            userId: qrPass.userId,
+            qrPassId: qrPass.id,
+            dayKey,
+            date: new Date(`${dayKey}T00:00:00.000Z`),
+            scannedAt: now,
+            source: AttendanceSource.QR_KIOSK,
+          },
+        });
+      }
+    } else if (!existing) {
+      status = "INVALID";
+      message = "Arrival must be recorded first before leaving can be marked.";
+    } else if (existing.checkedOutAt) {
+      status = "DUPLICATE";
+      message = "Leaving was already recorded earlier today.";
+    } else {
+      message = "Leaving marked successfully.";
+      await db.attendanceRecord.update({
+        where: { id: existing.id },
+        data: {
+          checkedOutAt: now,
+        },
+      });
+    }
 
     await db.attendanceScanLog.create({
       data: {
@@ -361,21 +413,9 @@ export async function scanAttendanceByToken(token: string, scannerLabel?: string
       },
     });
 
-    if (!existing) {
-      await db.attendanceRecord.create({
-        data: {
-          userId: qrPass.userId,
-          qrPassId: qrPass.id,
-          dayKey,
-          date: new Date(`${dayKey}T00:00:00.000Z`),
-          scannedAt: now,
-          source: AttendanceSource.QR_KIOSK,
-        },
-      });
-    }
-
     return {
       status: status.toLowerCase(),
+      mode: scanWindow.mode,
       message,
       prefect: {
         fullName: qrPass.user.fullName,
@@ -384,9 +424,6 @@ export async function scanAttendanceByToken(token: string, scannerLabel?: string
       },
     } as const;
   } catch {
-    const now = new Date();
-    const dayKey = toDayKey(now);
-
     await db.attendanceScanLog.create({
       data: {
         dayKey,
@@ -398,6 +435,7 @@ export async function scanAttendanceByToken(token: string, scannerLabel?: string
 
     return {
       status: "invalid",
+      mode: scanWindow.mode,
       message: "This QR code is invalid or expired.",
       prefect: null,
     } as const;

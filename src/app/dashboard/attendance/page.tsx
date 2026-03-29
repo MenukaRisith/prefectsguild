@@ -287,8 +287,13 @@ export default async function AttendancePage() {
                       <StatusBadge value={record.source} />
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      {formatDisplayDate(record.date)} / {formatDisplayDateTime(record.scannedAt)}
+                      {formatDisplayDate(record.date)} / In: {formatDisplayDateTime(record.scannedAt)}
                     </p>
+                    {record.checkedOutAt ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Out: {formatDisplayDateTime(record.checkedOutAt)}
+                      </p>
+                    ) : null}
                   </div>
                 ))
               )}

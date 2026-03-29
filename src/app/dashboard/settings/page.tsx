@@ -6,6 +6,7 @@ import {
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMinutesAsTime } from "@/lib/attendance-windows";
 import { env } from "@/lib/env";
 import { getReminderCount } from "@/lib/queries";
 import { requireRole } from "@/lib/session";
@@ -24,11 +25,11 @@ export default async function SettingsPage() {
     <div>
       <DashboardHeader
         title="Settings"
-        description="Manage live platform details, support contact, and SMTP delivery without touching the deployment for every small change."
+        description="Manage live platform details, scanner windows, support contact, and SMTP delivery without touching the deployment for every small change."
         reminderCount={reminderCount}
       />
       <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid gap-4 xl:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-4">
           <Card>
             <CardHeader>
               <CardTitle>Email mode</CardTitle>
@@ -61,6 +62,23 @@ export default async function SettingsPage() {
               >
                 Open public site
               </a>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Scanner schedule</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Weekdays only</p>
+              <p>
+                Arrival: {formatMinutesAsTime(settings.attendanceCheckInStartMinute)} to{" "}
+                {formatMinutesAsTime(settings.attendanceCheckInEndMinute)}
+              </p>
+              <p>
+                Leaving: {formatMinutesAsTime(settings.attendanceCheckOutStartMinute)} to{" "}
+                {formatMinutesAsTime(settings.attendanceCheckOutEndMinute)}
+              </p>
             </CardContent>
           </Card>
 

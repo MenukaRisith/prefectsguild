@@ -78,6 +78,7 @@ enum AttendanceScanStatus {
   ACCEPTED
   DUPLICATE
   INVALID
+  OUTSIDE_WINDOW
 }
 
 model User {
@@ -236,6 +237,7 @@ model AttendanceRecord {
   dayKey      String
   date        DateTime
   scannedAt   DateTime         @default(now())
+  checkedOutAt DateTime?
   source      AttendanceSource @default(QR_KIOSK)
   notes       String?
   createdAt   DateTime         @default(now())
@@ -314,6 +316,10 @@ model SystemSetting {
   supportWhatsappNumber String   @default("0719089448")
   appUrl                String?
   attendanceCutoffHour  Int      @default(8)
+  attendanceCheckInStartMinute Int @default(390)
+  attendanceCheckInEndMinute Int @default(480)
+  attendanceCheckOutStartMinute Int @default(810)
+  attendanceCheckOutEndMinute Int @default(840)
   useCustomSmtp         Boolean  @default(false)
   smtpHost              String?
   smtpPort              Int?

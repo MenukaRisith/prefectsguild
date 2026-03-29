@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { initialActionState } from "@/lib/action-state";
 import {
+  formatMinutesAsTime,
+  minutesToTimeInput,
+} from "@/lib/attendance-windows";
+import {
   updatePlatformSettingsAction,
   updateSmtpSettingsAction,
 } from "@/lib/actions/dashboard-actions";
@@ -44,7 +48,7 @@ export function PlatformSettingsForm({
       <CardHeader>
         <CardTitle>Platform settings</CardTitle>
         <CardDescription>
-          Update the school identity, public link targets, support contact, and attendance timing.
+          Update the school identity, public links, support contact, and weekday scanner windows.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -86,16 +90,44 @@ export function PlatformSettingsForm({
             <FieldError errors={state.errors} name="supportWhatsappNumber" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="settings-attendanceCutoffHour">Attendance cutoff hour</Label>
+            <Label htmlFor="settings-attendanceCheckInStartTime">Arrival starts</Label>
             <Input
-              id="settings-attendanceCutoffHour"
-              name="attendanceCutoffHour"
-              type="number"
-              min={0}
-              max={23}
-              defaultValue={settings.attendanceCutoffHour}
+              id="settings-attendanceCheckInStartTime"
+              name="attendanceCheckInStartTime"
+              type="time"
+              defaultValue={minutesToTimeInput(settings.attendanceCheckInStartMinute)}
             />
-            <FieldError errors={state.errors} name="attendanceCutoffHour" />
+            <FieldError errors={state.errors} name="attendanceCheckInStartTime" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settings-attendanceCheckInEndTime">Arrival ends</Label>
+            <Input
+              id="settings-attendanceCheckInEndTime"
+              name="attendanceCheckInEndTime"
+              type="time"
+              defaultValue={minutesToTimeInput(settings.attendanceCheckInEndMinute)}
+            />
+            <FieldError errors={state.errors} name="attendanceCheckInEndTime" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settings-attendanceCheckOutStartTime">Leaving starts</Label>
+            <Input
+              id="settings-attendanceCheckOutStartTime"
+              name="attendanceCheckOutStartTime"
+              type="time"
+              defaultValue={minutesToTimeInput(settings.attendanceCheckOutStartMinute)}
+            />
+            <FieldError errors={state.errors} name="attendanceCheckOutStartTime" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="settings-attendanceCheckOutEndTime">Leaving ends</Label>
+            <Input
+              id="settings-attendanceCheckOutEndTime"
+              name="attendanceCheckOutEndTime"
+              type="time"
+              defaultValue={minutesToTimeInput(settings.attendanceCheckOutEndMinute)}
+            />
+            <FieldError errors={state.errors} name="attendanceCheckOutEndTime" />
           </div>
           <div className="space-y-2 lg:col-span-2">
             <Label htmlFor="settings-appUrl">Public app URL</Label>
@@ -104,6 +136,18 @@ export function PlatformSettingsForm({
               Password reset links, public references, and secure-cookie fallback use this URL.
             </p>
             <FieldError errors={state.errors} name="appUrl" />
+          </div>
+          <div className="rounded-[1rem] border border-border/70 bg-muted/35 px-4 py-4 text-sm text-muted-foreground lg:col-span-2">
+            <p className="font-medium text-foreground">Weekday scanner schedule</p>
+            <p className="mt-2 leading-6">
+              Arrival window: {formatMinutesAsTime(settings.attendanceCheckInStartMinute)} to{" "}
+              {formatMinutesAsTime(settings.attendanceCheckInEndMinute)}. Leaving window:{" "}
+              {formatMinutesAsTime(settings.attendanceCheckOutStartMinute)} to{" "}
+              {formatMinutesAsTime(settings.attendanceCheckOutEndMinute)}.
+            </p>
+            <p className="mt-2 text-xs leading-5">
+              The scanner accepts QR scans Monday to Friday only. Outside these windows it stays read-only and shows the next valid session.
+            </p>
           </div>
           <div className="lg:col-span-2">
             <SubmitButton className="rounded-full" pendingLabel="Saving platform settings...">

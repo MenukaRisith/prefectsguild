@@ -48,7 +48,8 @@ export async function GET() {
     "Section",
     "Prefect ID",
     "Attendance Date",
-    "Scanned At",
+    "Checked In At",
+    "Checked Out At",
     "Source",
   ];
 
@@ -59,6 +60,7 @@ export async function GET() {
     record.qrPass?.prefectIdentifier ?? "",
     formatDisplayDate(record.date),
     formatDisplayDateTime(record.scannedAt),
+    record.checkedOutAt ? formatDisplayDateTime(record.checkedOutAt) : "",
     record.source,
   ]);
 

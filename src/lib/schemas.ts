@@ -23,6 +23,10 @@ const optionalText = (max: number) =>
     z.string().max(max).optional(),
   );
 
+const timeValueSchema = z
+  .string()
+  .regex(/^\d{2}:\d{2}$/, "Select a valid time.");
+
 export const setupSchema = z.object({
   fullName: z.string().min(3, "Full name is required."),
   email: z.email("Enter a valid email address."),
@@ -123,15 +127,54 @@ export const absenceSchema = z.object({
   reason: z.string().min(10, "Reason must be at least 10 characters.").max(800),
 });
 
-export const platformSettingsSchema = z.object({
-  schoolName: z.string().min(3, "School name is required.").max(100),
-  shortName: z.string().min(2, "Short name is required.").max(50),
-  motto: z.string().min(2, "Motto is required.").max(60),
-  footerLabel: z.string().min(3, "Footer label is required.").max(90),
-  supportWhatsappNumber: z.string().min(7, "Support WhatsApp number is required.").max(30),
-  appUrl: z.url("Enter a valid public app URL."),
-  attendanceCutoffHour: z.coerce.number().int().min(0).max(23),
-});
+function timeValueToMinutes(value: string) {
+  const [hours, minutes] = value.split(":").map((part) => Number(part));
+  return hours * 60 + minutes;
+}
+
+export const platformSettingsSchema = z
+  .object({
+    schoolName: z.string().min(3, "School name is required.").max(100),
+    shortName: z.string().min(2, "Short name is required.").max(50),
+    motto: z.string().min(2, "Motto is required.").max(60),
+    footerLabel: z.string().min(3, "Footer label is required.").max(90),
+    supportWhatsappNumber: z.string().min(7, "Support WhatsApp number is required.").max(30),
+    appUrl: z.url("Enter a valid public app URL."),
+    attendanceCheckInStartTime: timeValueSchema,
+    attendanceCheckInEndTime: timeValueSchema,
+    attendanceCheckOutStartTime: timeValueSchema,
+    attendanceCheckOutEndTime: timeValueSchema,
+  })
+  .superRefine((value, context) => {
+    const checkInStart = timeValueToMinutes(value.attendanceCheckInStartTime);
+    const checkInEnd = timeValueToMinutes(value.attendanceCheckInEndTime);
+    const checkOutStart = timeValueToMinutes(value.attendanceCheckOutStartTime);
+    const checkOutEnd = timeValueToMinutes(value.attendanceCheckOutEndTime);
+
+    if (checkInStart >= checkInEnd) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Arrival start time must be before the arrival end time.",
+        path: ["attendanceCheckInStartTime"],
+      });
+    }
+
+    if (checkOutStart >= checkOutEnd) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Leaving start time must be before the leaving end time.",
+        path: ["attendanceCheckOutStartTime"],
+      });
+    }
+
+    if (checkInEnd >= checkOutStart) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The leaving window must start after the arrival window ends.",
+        path: ["attendanceCheckOutStartTime"],
+      });
+    }
+  });
 
 export const smtpSettingsSchema = z
   .object({

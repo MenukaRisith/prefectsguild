@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { defaultAttendanceWindows } from "@/lib/attendance-windows";
 import { siteConfig } from "@/lib/constants";
 
 const SYSTEM_SETTINGS_ID = 1;
@@ -18,6 +19,10 @@ export type SiteIdentity = {
 export type EffectiveSystemSettings = SiteIdentity & {
   appUrl: string;
   attendanceCutoffHour: number;
+  attendanceCheckInStartMinute: number;
+  attendanceCheckInEndMinute: number;
+  attendanceCheckOutStartMinute: number;
+  attendanceCheckOutEndMinute: number;
   useCustomSmtp: boolean;
   smtpHost: string;
   smtpPort: number;
@@ -150,6 +155,18 @@ export async function getSystemSettings(): Promise<EffectiveSystemSettings> {
     supportWhatsappHref: buildWhatsappHref(supportWhatsappNumber),
     appUrl: record?.appUrl || env.APP_URL,
     attendanceCutoffHour: record?.attendanceCutoffHour ?? env.ATTENDANCE_CUTOFF_HOUR,
+    attendanceCheckInStartMinute:
+      record?.attendanceCheckInStartMinute ??
+      defaultAttendanceWindows.attendanceCheckInStartMinute,
+    attendanceCheckInEndMinute:
+      record?.attendanceCheckInEndMinute ??
+      defaultAttendanceWindows.attendanceCheckInEndMinute,
+    attendanceCheckOutStartMinute:
+      record?.attendanceCheckOutStartMinute ??
+      defaultAttendanceWindows.attendanceCheckOutStartMinute,
+    attendanceCheckOutEndMinute:
+      record?.attendanceCheckOutEndMinute ??
+      defaultAttendanceWindows.attendanceCheckOutEndMinute,
     useCustomSmtp,
     smtpHost,
     smtpPort,
@@ -171,6 +188,10 @@ export async function upsertSystemSettings(
     supportWhatsappNumber: string;
     appUrl: string | null;
     attendanceCutoffHour: number;
+    attendanceCheckInStartMinute: number;
+    attendanceCheckInEndMinute: number;
+    attendanceCheckOutStartMinute: number;
+    attendanceCheckOutEndMinute: number;
     useCustomSmtp: boolean;
     smtpHost: string | null;
     smtpPort: number | null;
