@@ -131,6 +131,8 @@
       radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 22%),
       linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, white 4%) 0%, var(--background) 56%, color-mix(in srgb, var(--background) 96%, var(--primary) 4%) 100%);
     min-height: 100vh;
+    background-repeat: no-repeat;
+    background-size: cover;
   }
   ::selection {
     background: color-mix(in srgb, var(--accent) 48%, transparent);
@@ -162,6 +164,17 @@
       radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 24%),
       linear-gradient(135deg, transparent 0%, color-mix(in srgb, var(--primary) 3%, transparent) 100%);
     pointer-events: none;
+  }
+
+  .page-shell {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  .page-shell-inner {
+    margin-inline: auto;
+    width: 100%;
   }
 
   .panel-surface {

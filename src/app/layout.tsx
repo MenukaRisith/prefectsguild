@@ -31,12 +31,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${manrope.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${manrope.variable} ${fraunces.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full">
+      <body className="min-h-screen overflow-x-hidden">
         <ThemeProvider>
           <TooltipProvider>
-            <div className="min-h-full bg-background text-foreground">
+            <div className="min-h-screen bg-background text-foreground">
               {children}
             </div>
             <Toaster richColors />

@@ -42,7 +42,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen">
       <SiteHeader siteIdentity={settings} />
-      <main>
+      <main className="hero-orbit w-full">
         <section id="features" className="border-b border-border/70">
           <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:py-24">
             <div className="max-w-3xl space-y-6">
