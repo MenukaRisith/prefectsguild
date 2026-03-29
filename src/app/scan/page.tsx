@@ -20,10 +20,10 @@ export default async function ScanPage() {
               School attendance kiosk
             </p>
             <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-              Scan prefect QR passes as they arrive.
+              Scan prefect QR passes.
             </h1>
             <p className="text-base leading-8 text-muted-foreground">
-              Use the camera-based kiosk at school gates or switch to a hardware scanner by pasting the token manually.
+              Allow camera access once. The scanner starts automatically and stays ready for the next prefect.
             </p>
           </div>
         </div>
