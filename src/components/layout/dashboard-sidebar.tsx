@@ -42,7 +42,7 @@ export function DashboardSidebar({
     <Sidebar variant="inset">
       <SidebarHeader className="gap-4 px-3 py-4">
         <div className="flex items-center justify-between gap-3">
-          <BrandMark compact siteIdentity={siteIdentity} />
+          <BrandMark compact siteIdentity={siteIdentity} guildOnly />
           <ThemeToggle />
         </div>
         <div className="rounded-[1.25rem] border border-border/70 bg-card/75 p-3 shadow-[0_18px_40px_-34px_color-mix(in_srgb,var(--primary)_45%,transparent)] backdrop-blur">

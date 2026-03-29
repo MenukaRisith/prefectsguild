@@ -19,7 +19,7 @@ export function SiteHeader({ siteIdentity }: { siteIdentity?: SiteIdentity }) {
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/78 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-4">
-          <BrandMark siteIdentity={identity} />
+          <BrandMark siteIdentity={identity} guildOnly />
           <div className="hidden rounded-full border border-border/70 bg-muted/45 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.22em] text-primary lg:inline-flex">
             {identity.motto}
           </div>
