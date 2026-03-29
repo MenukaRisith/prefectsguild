@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { formatDisplayDate } from "@/lib/date";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireRole } from "@/lib/session";
 import {
   toggleSuspensionAction,
@@ -20,23 +21,28 @@ export default async function PrefectsPage() {
   const actor = await requireRole([Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN]);
   const [reminderCount, prefects] = await Promise.all([
     getReminderCount(actor.id),
-    db.user.findMany({
-      where: {
-        role: Role.PREFECT,
-      },
-      include: {
-        _count: {
-          select: {
-            attendanceRecords: true,
-            absenceRequests: true,
+    safeRead(
+      "dashboard.prefects.prefectList",
+      () =>
+        db.user.findMany({
+          where: {
+            role: Role.PREFECT,
           },
-        },
-        prefectProfile: true,
-        qrPass: true,
-        assignedDuties: true,
-      },
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    }),
+          include: {
+            _count: {
+              select: {
+                attendanceRecords: true,
+                absenceRequests: true,
+              },
+            },
+            prefectProfile: true,
+            qrPass: true,
+            assignedDuties: true,
+          },
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        }),
+      () => [],
+    ),
   ]);
 
   return (

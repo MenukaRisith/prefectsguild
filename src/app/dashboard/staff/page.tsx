@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireRole } from "@/lib/session";
 import { toggleSuspensionAction } from "@/lib/actions/dashboard-actions";
 
@@ -16,14 +17,19 @@ export default async function StaffPage() {
   const actor = await requireRole([Role.SUPER_ADMIN]);
   const [reminderCount, staff] = await Promise.all([
     getReminderCount(actor.id),
-    db.user.findMany({
-      where: {
-        role: {
-          in: [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN],
-        },
-      },
-      orderBy: [{ role: "asc" }, { createdAt: "asc" }],
-    }),
+    safeRead(
+      "dashboard.staff.staffList",
+      () =>
+        db.user.findMany({
+          where: {
+            role: {
+              in: [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN],
+            },
+          },
+          orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+        }),
+      () => [],
+    ),
   ]);
 
   return (

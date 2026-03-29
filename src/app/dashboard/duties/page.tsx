@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { formatDisplayDate } from "@/lib/date";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -18,27 +19,45 @@ export default async function DutiesPage() {
   const user = await requireUser();
   const [reminderCount, prefects, classes, locations, assignments] = await Promise.all([
     getReminderCount(user.id),
-    db.user.findMany({
-      where: { role: Role.PREFECT, status: "ACTIVE" },
-      select: { id: true, fullName: true },
-      orderBy: { fullName: "asc" },
-    }),
-    db.academicClass.findMany({ orderBy: [{ grade: "asc" }, { section: "asc" }] }),
-    db.dutyLocation.findMany({ orderBy: { name: "asc" } }),
-    db.dutyAssignment.findMany({
-      where:
-        user.role === Role.PREFECT
-          ? {
-              assigneeId: user.id,
-            }
-          : undefined,
-      include: {
-        assignee: { select: { fullName: true } },
-        academicClass: true,
-        dutyLocation: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
+    safeRead(
+      "dashboard.duties.prefects",
+      () =>
+        db.user.findMany({
+          where: { role: Role.PREFECT, status: "ACTIVE" },
+          select: { id: true, fullName: true },
+          orderBy: { fullName: "asc" },
+        }),
+      () => [],
+    ),
+    safeRead(
+      "dashboard.duties.classes",
+      () => db.academicClass.findMany({ orderBy: [{ grade: "asc" }, { section: "asc" }] }),
+      () => [],
+    ),
+    safeRead(
+      "dashboard.duties.locations",
+      () => db.dutyLocation.findMany({ orderBy: { name: "asc" } }),
+      () => [],
+    ),
+    safeRead(
+      "dashboard.duties.assignments",
+      () =>
+        db.dutyAssignment.findMany({
+          where:
+            user.role === Role.PREFECT
+              ? {
+                  assigneeId: user.id,
+                }
+              : undefined,
+          include: {
+            assignee: { select: { fullName: true } },
+            academicClass: true,
+            dutyLocation: true,
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+      () => [],
+    ),
   ]);
 
   return (

@@ -5,6 +5,7 @@ import type { Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { hasRole } from "@/lib/permissions";
+import { safeMutation, safeRead } from "@/lib/runtime-safety";
 import { getSystemSettingsRecord } from "@/lib/system-settings";
 
 const sessionCookieName = "kccpg_session";
@@ -84,25 +85,53 @@ export async function getCurrentUser() {
     return null;
   }
 
-  const session = await db.session.findUnique({
-    where: { tokenHash: hashToken(token) },
-    include: {
-      user: {
-        include: {
-          prefectProfile: true,
-          qrPass: true,
+  const session = await safeRead(
+    "session.getCurrentUser",
+    () =>
+      db.session.findUnique({
+        where: { tokenHash: hashToken(token) },
+        select: {
+          id: true,
+          expiresAt: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              fullName: true,
+              role: true,
+              status: true,
+              whatsappNumber: true,
+              lastLoginAt: true,
+              createdAt: true,
+              prefectProfile: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  grade: true,
+                  section: true,
+                  appointedYear: true,
+                  profileImagePath: true,
+                  bio: true,
+                  prefectIdentifier: true,
+                  createdAt: true,
+                },
+              },
+            },
+          },
         },
-      },
-    },
-  });
+      }),
+    () => null,
+  );
 
   if (!session || session.expiresAt < new Date()) {
     return null;
   }
 
-  await db.session.update({
-    where: { id: session.id },
-    data: { lastUsedAt: new Date() },
+  await safeMutation("session.touchLastUsedAt", async () => {
+    await db.session.update({
+      where: { id: session.id },
+      data: { lastUsedAt: new Date() },
+    });
   });
 
   return session.user;

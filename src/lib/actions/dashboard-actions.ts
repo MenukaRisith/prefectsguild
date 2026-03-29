@@ -20,6 +20,7 @@ import {
 import { hashPassword } from "@/lib/password";
 import { assignmentRoles, dutyManagerRoles, verificationRoles } from "@/lib/permissions";
 import { requireRole, requireUser } from "@/lib/session";
+import { safeActionState, safeMutation } from "@/lib/runtime-safety";
 import {
   encryptSystemSecret,
   getSystemSettingsRecord,
@@ -44,49 +45,55 @@ export async function createStaffAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.SUPER_ADMIN]);
-  const parsed = staffCreationSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.createStaffAction",
+    "Unable to create the staff account right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.SUPER_ADMIN]);
+      const parsed = staffCreationSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const existingUser = await db.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
-  });
+      const existingUser = await db.user.findUnique({
+        where: { email: parsed.data.email.toLowerCase() },
+      });
 
-  if (existingUser) {
-    return {
-      success: false,
-      message: "An account already exists for this email.",
-    };
-  }
+      if (existingUser) {
+        return {
+          success: false,
+          message: "An account already exists for this email.",
+        };
+      }
 
-  const user = await db.user.create({
-    data: {
-      email: parsed.data.email.toLowerCase(),
-      fullName: parsed.data.fullName,
-      whatsappNumber: parsed.data.whatsappNumber,
-      passwordHash: await hashPassword(parsed.data.password),
-      role: parsed.data.role,
-      status: AccountStatus.ACTIVE,
-      createdById: actor.id,
+      const user = await db.user.create({
+        data: {
+          email: parsed.data.email.toLowerCase(),
+          fullName: parsed.data.fullName,
+          whatsappNumber: parsed.data.whatsappNumber,
+          passwordHash: await hashPassword(parsed.data.password),
+          role: parsed.data.role,
+          status: AccountStatus.ACTIVE,
+          createdById: actor.id,
+        },
+      });
+
+      await logAudit({
+        actorId: actor.id,
+        action: "staff.created",
+        targetType: "User",
+        targetId: user.id,
+        summary: `${parsed.data.role} account created for ${user.fullName}.`,
+      });
+
+      revalidatePath("/dashboard/staff");
+      return { success: true, message: "Staff account created." };
     },
-  });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "staff.created",
-    targetType: "User",
-    targetId: user.id,
-    summary: `${parsed.data.role} account created for ${user.fullName}.`,
-  });
-
-  revalidatePath("/dashboard/staff");
-  return { success: true, message: "Staff account created." };
+  );
 }
 
 export async function updatePlatformSettingsAction(
@@ -94,53 +101,59 @@ export async function updatePlatformSettingsAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.SUPER_ADMIN]);
-  const parsed = platformSettingsSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.updatePlatformSettingsAction",
+    "Unable to save platform settings right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.SUPER_ADMIN]);
+      const parsed = platformSettingsSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  try {
-    await upsertSystemSettings({
-      schoolName: parsed.data.schoolName,
-      shortName: parsed.data.shortName,
-      motto: parsed.data.motto,
-      footerLabel: parsed.data.footerLabel,
-      supportWhatsappNumber: parsed.data.supportWhatsappNumber,
-      appUrl: parsed.data.appUrl,
-      attendanceCutoffHour: parsed.data.attendanceCutoffHour,
-    });
-  } catch (error) {
-    return {
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Unable to save platform settings.",
-    };
-  }
+      try {
+        await upsertSystemSettings({
+          schoolName: parsed.data.schoolName,
+          shortName: parsed.data.shortName,
+          motto: parsed.data.motto,
+          footerLabel: parsed.data.footerLabel,
+          supportWhatsappNumber: parsed.data.supportWhatsappNumber,
+          appUrl: parsed.data.appUrl,
+          attendanceCutoffHour: parsed.data.attendanceCutoffHour,
+        });
+      } catch (error) {
+        return {
+          success: false,
+          message:
+            error instanceof Error ? error.message : "Unable to save platform settings.",
+        };
+      }
 
-  await logAudit({
-    actorId: actor.id,
-    action: "settings.platform_updated",
-    targetType: "SystemSetting",
-    targetId: "1",
-    summary: "Platform settings were updated.",
-  });
+      await logAudit({
+        actorId: actor.id,
+        action: "settings.platform_updated",
+        targetType: "SystemSetting",
+        targetId: "1",
+        summary: "Platform settings were updated.",
+      });
 
-  revalidatePath("/");
-  revalidatePath("/login");
-  revalidatePath("/register");
-  revalidatePath("/forgot-password");
-  revalidatePath("/reset-password");
-  revalidatePath("/scan");
-  revalidatePath("/setup");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/settings");
+      revalidatePath("/");
+      revalidatePath("/login");
+      revalidatePath("/register");
+      revalidatePath("/forgot-password");
+      revalidatePath("/reset-password");
+      revalidatePath("/scan");
+      revalidatePath("/setup");
+      revalidatePath("/dashboard");
+      revalidatePath("/dashboard/settings");
 
-  return { success: true, message: "Platform settings saved." };
+      return { success: true, message: "Platform settings saved." };
+    },
+  );
 }
 
 export async function updateSmtpSettingsAction(
@@ -148,124 +161,134 @@ export async function updateSmtpSettingsAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.SUPER_ADMIN]);
-  const parsed = smtpSettingsSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.updateSmtpSettingsAction",
+    "Unable to save email settings right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.SUPER_ADMIN]);
+      const parsed = smtpSettingsSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const existing = await getSystemSettingsRecord();
-  const smtpPassEncrypted = parsed.data.useCustomSmtp
-    ? parsed.data.smtpPass
-      ? encryptSystemSecret(parsed.data.smtpPass)
-      : existing?.smtpPassEncrypted ?? null
-    : null;
+      const existing = await getSystemSettingsRecord();
+      const smtpPassEncrypted = parsed.data.useCustomSmtp
+        ? parsed.data.smtpPass
+          ? encryptSystemSecret(parsed.data.smtpPass)
+          : existing?.smtpPassEncrypted ?? null
+        : null;
 
-  try {
-    await upsertSystemSettings({
-      useCustomSmtp: parsed.data.useCustomSmtp,
-      smtpHost: parsed.data.useCustomSmtp ? parsed.data.smtpHost ?? "" : null,
-      smtpPort: parsed.data.useCustomSmtp ? parsed.data.smtpPort : null,
-      smtpUser: parsed.data.useCustomSmtp ? parsed.data.smtpUser ?? "" : null,
-      smtpPassEncrypted,
-      smtpFrom: parsed.data.useCustomSmtp ? parsed.data.smtpFrom ?? "" : null,
-      smtpSecure: parsed.data.useCustomSmtp ? parsed.data.smtpSecure : null,
-    });
-  } catch (error) {
-    return {
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Unable to save email settings.",
-    };
-  }
+      try {
+        await upsertSystemSettings({
+          useCustomSmtp: parsed.data.useCustomSmtp,
+          smtpHost: parsed.data.useCustomSmtp ? parsed.data.smtpHost ?? "" : null,
+          smtpPort: parsed.data.useCustomSmtp ? parsed.data.smtpPort : null,
+          smtpUser: parsed.data.useCustomSmtp ? parsed.data.smtpUser ?? "" : null,
+          smtpPassEncrypted,
+          smtpFrom: parsed.data.useCustomSmtp ? parsed.data.smtpFrom ?? "" : null,
+          smtpSecure: parsed.data.useCustomSmtp ? parsed.data.smtpSecure : null,
+        });
+      } catch (error) {
+        return {
+          success: false,
+          message:
+            error instanceof Error ? error.message : "Unable to save email settings.",
+        };
+      }
 
-  await logAudit({
-    actorId: actor.id,
-    action: "settings.smtp_updated",
-    targetType: "SystemSetting",
-    targetId: "1",
-    summary: parsed.data.useCustomSmtp
-      ? "Custom SMTP settings were updated."
-      : "Custom SMTP was disabled and environment fallback is active.",
-  });
+      await logAudit({
+        actorId: actor.id,
+        action: "settings.smtp_updated",
+        targetType: "SystemSetting",
+        targetId: "1",
+        summary: parsed.data.useCustomSmtp
+          ? "Custom SMTP settings were updated."
+          : "Custom SMTP was disabled and environment fallback is active.",
+      });
 
-  revalidatePath("/dashboard/settings");
+      revalidatePath("/dashboard/settings");
 
-  return {
-    success: true,
-    message: parsed.data.useCustomSmtp
-      ? "Custom SMTP settings saved."
-      : "Custom SMTP disabled. Environment email settings will be used.",
-  };
+      return {
+        success: true,
+        message: parsed.data.useCustomSmtp
+          ? "Custom SMTP settings saved."
+          : "Custom SMTP disabled. Environment email settings will be used.",
+      };
+    },
+  );
 }
 
 export async function verifyPrefectAction(formData: FormData) {
-  const actor = await requireRole(verificationRoles);
-  const userId = formData.get("userId")?.toString();
+  await safeMutation("dashboard.verifyPrefectAction", async () => {
+    const actor = await requireRole(verificationRoles);
+    const userId = formData.get("userId")?.toString();
 
-  if (!userId) {
-    return;
-  }
+    if (!userId) {
+      return;
+    }
 
-  const updatedUser = await db.user.update({
-    where: { id: userId },
-    data: { status: AccountStatus.ACTIVE },
+    const updatedUser = await db.user.update({
+      where: { id: userId },
+      data: { status: AccountStatus.ACTIVE },
+    });
+
+    await ensureQrPassForUser(userId);
+    await logAudit({
+      actorId: actor.id,
+      action: "prefect.verified",
+      targetType: "User",
+      targetId: updatedUser.id,
+      summary: `${updatedUser.fullName} was verified.`,
+    });
+
+    revalidatePath("/dashboard/prefects");
   });
-
-  await ensureQrPassForUser(userId);
-  await logAudit({
-    actorId: actor.id,
-    action: "prefect.verified",
-    targetType: "User",
-    targetId: updatedUser.id,
-    summary: `${updatedUser.fullName} was verified.`,
-  });
-
-  revalidatePath("/dashboard/prefects");
 }
 
 export async function toggleSuspensionAction(formData: FormData) {
-  const actor = await requireRole([Role.SUPER_ADMIN]);
-  const userId = formData.get("userId")?.toString();
+  await safeMutation("dashboard.toggleSuspensionAction", async () => {
+    const actor = await requireRole([Role.SUPER_ADMIN]);
+    const userId = formData.get("userId")?.toString();
 
-  if (!userId || userId === actor.id) {
-    return;
-  }
+    if (!userId || userId === actor.id) {
+      return;
+    }
 
-  const user = await db.user.findUnique({ where: { id: userId } });
+    const user = await db.user.findUnique({ where: { id: userId } });
 
-  if (!user) {
-    return;
-  }
+    if (!user) {
+      return;
+    }
 
-  const nextStatus =
-    user.status === AccountStatus.SUSPENDED
-      ? user.role === Role.PREFECT
-        ? AccountStatus.PENDING_VERIFICATION
-        : AccountStatus.ACTIVE
-      : AccountStatus.SUSPENDED;
+    const nextStatus =
+      user.status === AccountStatus.SUSPENDED
+        ? user.role === Role.PREFECT
+          ? AccountStatus.PENDING_VERIFICATION
+          : AccountStatus.ACTIVE
+        : AccountStatus.SUSPENDED;
 
-  await db.user.update({
-    where: { id: userId },
-    data: {
-      status: nextStatus,
-    },
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        status: nextStatus,
+      },
+    });
+
+    await logAudit({
+      actorId: actor.id,
+      action: "user.status_changed",
+      targetType: "User",
+      targetId: userId,
+      summary: `${user.fullName} status changed to ${nextStatus}.`,
+    });
+
+    revalidatePath("/dashboard/prefects");
+    revalidatePath("/dashboard/staff");
   });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "user.status_changed",
-    targetType: "User",
-    targetId: userId,
-    summary: `${user.fullName} status changed to ${nextStatus}.`,
-  });
-
-  revalidatePath("/dashboard/prefects");
-  revalidatePath("/dashboard/staff");
 }
 
 export async function createClassAction(
@@ -273,39 +296,45 @@ export async function createClassAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole(dutyManagerRoles);
-  const parsed = classSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.createClassAction",
+    "Unable to save the class right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole(dutyManagerRoles);
+      const parsed = classSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  await db.academicClass.upsert({
-    where: {
-      grade_section: {
-        grade: parsed.data.grade,
-        section: parsed.data.section,
-      },
+      await db.academicClass.upsert({
+        where: {
+          grade_section: {
+            grade: parsed.data.grade,
+            section: parsed.data.section,
+          },
+        },
+        update: {
+          label: parsed.data.label,
+          isActive: true,
+        },
+        create: parsed.data,
+      });
+
+      await logAudit({
+        actorId: actor.id,
+        action: "class.saved",
+        targetType: "AcademicClass",
+        summary: `Class ${parsed.data.label} was saved.`,
+      });
+
+      revalidatePath("/dashboard/duties");
+      return { success: true, message: "Class saved." };
     },
-    update: {
-      label: parsed.data.label,
-      isActive: true,
-    },
-    create: parsed.data,
-  });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "class.saved",
-    targetType: "AcademicClass",
-    summary: `Class ${parsed.data.label} was saved.`,
-  });
-
-  revalidatePath("/dashboard/duties");
-  return { success: true, message: "Class saved." };
+  );
 }
 
 export async function createLocationAction(
@@ -313,34 +342,40 @@ export async function createLocationAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole(dutyManagerRoles);
-  const parsed = locationSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.createLocationAction",
+    "Unable to save the location right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole(dutyManagerRoles);
+      const parsed = locationSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  await db.dutyLocation.upsert({
-    where: { name: parsed.data.name },
-    update: {
-      description: parsed.data.description,
-      isActive: true,
+      await db.dutyLocation.upsert({
+        where: { name: parsed.data.name },
+        update: {
+          description: parsed.data.description,
+          isActive: true,
+        },
+        create: parsed.data,
+      });
+
+      await logAudit({
+        actorId: actor.id,
+        action: "location.saved",
+        targetType: "DutyLocation",
+        summary: `Duty location ${parsed.data.name} was saved.`,
+      });
+
+      revalidatePath("/dashboard/duties");
+      return { success: true, message: "Location saved." };
     },
-    create: parsed.data,
-  });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "location.saved",
-    targetType: "DutyLocation",
-    summary: `Duty location ${parsed.data.name} was saved.`,
-  });
-
-  revalidatePath("/dashboard/duties");
-  return { success: true, message: "Location saved." };
+  );
 }
 
 export async function assignDutyAction(
@@ -348,39 +383,45 @@ export async function assignDutyAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole(assignmentRoles);
-  const parsed = dutyAssignmentSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.assignDutyAction",
+    "Unable to assign the duty right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole(assignmentRoles);
+      const parsed = dutyAssignmentSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  await db.dutyAssignment.create({
-    data: {
-      assigneeId: parsed.data.assigneeId,
-      assignedById: actor.id,
-      kind: parsed.data.kind,
-      academicClassId: parsed.data.academicClassId,
-      dutyLocationId: parsed.data.dutyLocationId,
-      title: parsed.data.title,
-      notes: parsed.data.notes,
-      startsOn: dateValue(parsed.data.startsOn),
-      endsOn: dateValue(parsed.data.endsOn),
+      await db.dutyAssignment.create({
+        data: {
+          assigneeId: parsed.data.assigneeId,
+          assignedById: actor.id,
+          kind: parsed.data.kind,
+          academicClassId: parsed.data.academicClassId,
+          dutyLocationId: parsed.data.dutyLocationId,
+          title: parsed.data.title,
+          notes: parsed.data.notes,
+          startsOn: dateValue(parsed.data.startsOn),
+          endsOn: dateValue(parsed.data.endsOn),
+        },
+      });
+
+      await logAudit({
+        actorId: actor.id,
+        action: "duty.assigned",
+        targetType: "DutyAssignment",
+        summary: `Duty "${parsed.data.title}" was assigned.`,
+      });
+
+      revalidatePath("/dashboard/duties");
+      return { success: true, message: "Duty assigned." };
     },
-  });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "duty.assigned",
-    targetType: "DutyAssignment",
-    summary: `Duty "${parsed.data.title}" was assigned.`,
-  });
-
-  revalidatePath("/dashboard/duties");
-  return { success: true, message: "Duty assigned." };
+  );
 }
 
 export async function createTaskAction(
@@ -388,70 +429,78 @@ export async function createTaskAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
-  const parsed = taskSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.createTaskAction",
+    "Unable to create the task right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
+      const parsed = taskSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const task = await db.task.create({
-    data: {
-      title: parsed.data.title,
-      description: parsed.data.description,
-      priority: parsed.data.priority,
-      dueAt: dateValue(parsed.data.dueAt),
-      assigneeId: parsed.data.assigneeId,
-      createdById: actor.id,
+      const task = await db.task.create({
+        data: {
+          title: parsed.data.title,
+          description: parsed.data.description,
+          priority: parsed.data.priority,
+          dueAt: dateValue(parsed.data.dueAt),
+          assigneeId: parsed.data.assigneeId,
+          createdById: actor.id,
+        },
+      });
+
+      await queueTaskReminders(task.id);
+      await logAudit({
+        actorId: actor.id,
+        action: "task.created",
+        targetType: "Task",
+        targetId: task.id,
+        summary: `Task "${task.title}" created.`,
+      });
+
+      revalidatePath("/dashboard/tasks");
+      return { success: true, message: "Task created." };
     },
-  });
-
-  await queueTaskReminders(task.id);
-  await logAudit({
-    actorId: actor.id,
-    action: "task.created",
-    targetType: "Task",
-    targetId: task.id,
-    summary: `Task "${task.title}" created.`,
-  });
-
-  revalidatePath("/dashboard/tasks");
-  return { success: true, message: "Task created." };
+  );
 }
 
 export async function updateTaskStatusAction(formData: FormData) {
-  const actor = await requireUser();
-  const taskId = formData.get("taskId")?.toString();
-  const nextStatus = formData.get("status")?.toString() as TaskStatus | undefined;
+  await safeMutation("dashboard.updateTaskStatusAction", async () => {
+    const actor = await requireUser();
+    const taskId = formData.get("taskId")?.toString();
+    const nextStatus = formData.get("status")?.toString() as TaskStatus | undefined;
 
-  if (!taskId || !nextStatus) {
-    return;
-  }
+    if (!taskId || !nextStatus) {
+      return;
+    }
 
-  const task = await db.task.findUnique({ where: { id: taskId } });
+    const task = await db.task.findUnique({ where: { id: taskId } });
 
-  if (!task) {
-    return;
-  }
+    if (!task) {
+      return;
+    }
 
-  const canUpdate =
-    task.assigneeId === actor.id ||
-    actor.role === Role.ADMIN ||
-    actor.role === Role.SUPER_ADMIN;
+    const canUpdate =
+      task.assigneeId === actor.id ||
+      actor.role === Role.ADMIN ||
+      actor.role === Role.SUPER_ADMIN;
 
-  if (!canUpdate) {
-    return;
-  }
+    if (!canUpdate) {
+      return;
+    }
 
-  await db.task.update({
-    where: { id: taskId },
-    data: { status: nextStatus },
+    await db.task.update({
+      where: { id: taskId },
+      data: { status: nextStatus },
+    });
+
+    revalidatePath("/dashboard/tasks");
   });
-
-  revalidatePath("/dashboard/tasks");
 }
 
 export async function createEventAction(
@@ -459,38 +508,44 @@ export async function createEventAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
-  const parsed = eventSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.createEventAction",
+    "Unable to create the event right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
+      const parsed = eventSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const event = await db.calendarEvent.create({
-    data: {
-      title: parsed.data.title,
-      description: parsed.data.description,
-      location: parsed.data.location,
-      eventDate: new Date(parsed.data.eventDate),
-      audience: parsed.data.audience,
-      createdById: actor.id,
+      const event = await db.calendarEvent.create({
+        data: {
+          title: parsed.data.title,
+          description: parsed.data.description,
+          location: parsed.data.location,
+          eventDate: new Date(parsed.data.eventDate),
+          audience: parsed.data.audience,
+          createdById: actor.id,
+        },
+      });
+
+      await queueCalendarReminders(event.id);
+      await logAudit({
+        actorId: actor.id,
+        action: "event.created",
+        targetType: "CalendarEvent",
+        targetId: event.id,
+        summary: `Event "${event.title}" created.`,
+      });
+
+      revalidatePath("/dashboard/calendar");
+      return { success: true, message: "Event created." };
     },
-  });
-
-  await queueCalendarReminders(event.id);
-  await logAudit({
-    actorId: actor.id,
-    action: "event.created",
-    targetType: "CalendarEvent",
-    targetId: event.id,
-    summary: `Event "${event.title}" created.`,
-  });
-
-  revalidatePath("/dashboard/calendar");
-  return { success: true, message: "Event created." };
+  );
 }
 
 export async function createAnnouncementAction(
@@ -498,35 +553,41 @@ export async function createAnnouncementAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
-  const parsed = announcementSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.createAnnouncementAction",
+    "Unable to publish the announcement right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
+      const parsed = announcementSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  await db.announcement.create({
-    data: {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      audience: parsed.data.audience,
-      createdById: actor.id,
+      await db.announcement.create({
+        data: {
+          title: parsed.data.title,
+          body: parsed.data.body,
+          audience: parsed.data.audience,
+          createdById: actor.id,
+        },
+      });
+
+      await logAudit({
+        actorId: actor.id,
+        action: "announcement.created",
+        targetType: "Announcement",
+        summary: `Announcement "${parsed.data.title}" published.`,
+      });
+
+      revalidatePath("/dashboard/announcements");
+      revalidatePath("/dashboard");
+      return { success: true, message: "Announcement published." };
     },
-  });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "announcement.created",
-    targetType: "Announcement",
-    summary: `Announcement "${parsed.data.title}" published.`,
-  });
-
-  revalidatePath("/dashboard/announcements");
-  revalidatePath("/dashboard");
-  return { success: true, message: "Announcement published." };
+  );
 }
 
 export async function submitAbsenceAction(
@@ -534,76 +595,84 @@ export async function submitAbsenceAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const actor = await requireRole([Role.PREFECT]);
-  const parsed = absenceSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "dashboard.submitAbsenceAction",
+    "Unable to submit the absence reason right now. Try again in a moment.",
+    async () => {
+      const actor = await requireRole([Role.PREFECT]);
+      const parsed = absenceSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  await db.absenceRequest.create({
-    data: {
-      userId: actor.id,
-      startDate: new Date(parsed.data.startDate),
-      endDate: new Date(parsed.data.endDate),
-      reason: parsed.data.reason,
-      status: AbsenceStatus.SUBMITTED,
+      await db.absenceRequest.create({
+        data: {
+          userId: actor.id,
+          startDate: new Date(parsed.data.startDate),
+          endDate: new Date(parsed.data.endDate),
+          reason: parsed.data.reason,
+          status: AbsenceStatus.SUBMITTED,
+        },
+      });
+
+      await logAudit({
+        actorId: actor.id,
+        action: "absence.submitted",
+        targetType: "AbsenceRequest",
+        summary: `${actor.fullName} submitted an absence reason.`,
+      });
+
+      revalidatePath("/dashboard/attendance");
+      revalidatePath("/dashboard");
+      return { success: true, message: "Absence submitted for review." };
     },
-  });
-
-  await logAudit({
-    actorId: actor.id,
-    action: "absence.submitted",
-    targetType: "AbsenceRequest",
-    summary: `${actor.fullName} submitted an absence reason.`,
-  });
-
-  revalidatePath("/dashboard/attendance");
-  revalidatePath("/dashboard");
-  return { success: true, message: "Absence submitted for review." };
+  );
 }
 
 export async function reviewAbsenceAction(formData: FormData) {
-  const actor = await requireRole([Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN]);
-  const absenceId = formData.get("absenceId")?.toString();
-  const status = formData.get("status")?.toString() as AbsenceStatus | undefined;
-  const reviewNote = formData.get("reviewNote")?.toString();
+  await safeMutation("dashboard.reviewAbsenceAction", async () => {
+    const actor = await requireRole([Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN]);
+    const absenceId = formData.get("absenceId")?.toString();
+    const status = formData.get("status")?.toString() as AbsenceStatus | undefined;
+    const reviewNote = formData.get("reviewNote")?.toString();
 
-  if (!absenceId || !status) {
-    return;
-  }
+    if (!absenceId || !status) {
+      return;
+    }
 
-  const absence = await db.absenceRequest.update({
-    where: { id: absenceId },
-    data: {
-      status,
-      reviewNote,
-      reviewedAt: new Date(),
-      reviewedById: actor.id,
-    },
-    include: {
-      user: {
-        select: {
-          fullName: true,
+    const absence = await db.absenceRequest.update({
+      where: { id: absenceId },
+      data: {
+        status,
+        reviewNote,
+        reviewedAt: new Date(),
+        reviewedById: actor.id,
+      },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  await logAudit({
-    actorId: actor.id,
-    action: "absence.reviewed",
-    targetType: "AbsenceRequest",
-    targetId: absenceId,
-    summary: `${absence.user.fullName} absence was marked ${status.toLowerCase()}.`,
-    meta: {
-      reviewNote,
-    },
-  });
+    await logAudit({
+      actorId: actor.id,
+      action: "absence.reviewed",
+      targetType: "AbsenceRequest",
+      targetId: absenceId,
+      summary: `${absence.user.fullName} absence was marked ${status.toLowerCase()}.`,
+      meta: {
+        reviewNote,
+      },
+    });
 
-  revalidatePath("/dashboard/attendance");
-  revalidatePath("/dashboard");
+    revalidatePath("/dashboard/attendance");
+    revalidatePath("/dashboard");
+  });
 }

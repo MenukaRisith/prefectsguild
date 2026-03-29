@@ -26,6 +26,7 @@ import {
   invalidateAllUserSessions,
 } from "@/lib/session";
 import { saveProfileImage } from "@/lib/storage";
+import { safeActionState } from "@/lib/runtime-safety";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getSystemSettings } from "@/lib/system-settings";
 
@@ -38,59 +39,65 @@ export async function setupSuperAdminAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const superAdminCount = await db.user.count({
-    where: { role: Role.SUPER_ADMIN },
-  });
+  return safeActionState(
+    "auth.setupSuperAdminAction",
+    "Unable to create the super admin right now. Try again in a moment.",
+    async () => {
+      const superAdminCount = await db.user.count({
+        where: { role: Role.SUPER_ADMIN },
+      });
 
-  if (superAdminCount > 0) {
-    return {
-      success: false,
-      message: "Super admin has already been configured.",
-    };
-  }
+      if (superAdminCount > 0) {
+        return {
+          success: false,
+          message: "Super admin has already been configured.",
+        };
+      }
 
-  const parsed = setupSchema.safeParse(formValues(formData));
+      const parsed = setupSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const existingUser = await db.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
-  });
+      const existingUser = await db.user.findUnique({
+        where: { email: parsed.data.email.toLowerCase() },
+      });
 
-  if (existingUser) {
-    return {
-      success: false,
-      message: "An account already exists for this email.",
-    };
-  }
+      if (existingUser) {
+        return {
+          success: false,
+          message: "An account already exists for this email.",
+        };
+      }
 
-  const passwordHash = await hashPassword(parsed.data.password);
-  const user = await db.user.create({
-    data: {
-      email: parsed.data.email.toLowerCase(),
-      fullName: parsed.data.fullName,
-      whatsappNumber: parsed.data.whatsappNumber,
-      passwordHash,
-      role: Role.SUPER_ADMIN,
-      status: AccountStatus.ACTIVE,
+      const passwordHash = await hashPassword(parsed.data.password);
+      const user = await db.user.create({
+        data: {
+          email: parsed.data.email.toLowerCase(),
+          fullName: parsed.data.fullName,
+          whatsappNumber: parsed.data.whatsappNumber,
+          passwordHash,
+          role: Role.SUPER_ADMIN,
+          status: AccountStatus.ACTIVE,
+        },
+      });
+
+      await logAudit({
+        actorId: user.id,
+        action: "super_admin.created",
+        targetType: "User",
+        targetId: user.id,
+        summary: "Initial super admin account created.",
+      });
+
+      await createSession(user.id);
+      redirect("/dashboard");
     },
-  });
-
-  await logAudit({
-    actorId: user.id,
-    action: "super_admin.created",
-    targetType: "User",
-    targetId: user.id,
-    summary: "Initial super admin account created.",
-  });
-
-  await createSession(user.id);
-  redirect("/dashboard");
+  );
 }
 
 export async function loginAction(
@@ -98,71 +105,77 @@ export async function loginAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const parsed = loginSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "auth.loginAction",
+    "Unable to sign in right now. Try again in a moment.",
+    async () => {
+      const parsed = loginSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const email = parsed.data.email.toLowerCase();
-  const rateLimit = checkRateLimit(`login:${email}`, 5, 15 * 60 * 1000);
+      const email = parsed.data.email.toLowerCase();
+      const rateLimit = checkRateLimit(`login:${email}`, 5, 15 * 60 * 1000);
 
-  if (!rateLimit.allowed) {
-    return {
-      success: false,
-      message: `Too many login attempts. Try again in ${rateLimit.retryAfter} seconds.`,
-    };
-  }
+      if (!rateLimit.allowed) {
+        return {
+          success: false,
+          message: `Too many login attempts. Try again in ${rateLimit.retryAfter} seconds.`,
+        };
+      }
 
-  const user = await db.user.findUnique({
-    where: { email },
-  });
+      const user = await db.user.findUnique({
+        where: { email },
+      });
 
-  if (!user) {
-    return {
-      success: false,
-      message: "Invalid email or password.",
-    };
-  }
+      if (!user) {
+        return {
+          success: false,
+          message: "Invalid email or password.",
+        };
+      }
 
-  const passwordMatches = await verifyPassword(
-    parsed.data.password,
-    user.passwordHash,
+      const passwordMatches = await verifyPassword(
+        parsed.data.password,
+        user.passwordHash,
+      );
+
+      if (!passwordMatches) {
+        return {
+          success: false,
+          message: "Invalid email or password.",
+        };
+      }
+
+      if (user.status === AccountStatus.SUSPENDED) {
+        return {
+          success: false,
+          message: "This account has been suspended. Contact the guild office.",
+        };
+      }
+
+      await db.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+
+      await createSession(user.id);
+
+      await logAudit({
+        actorId: user.id,
+        action: "auth.login",
+        targetType: "User",
+        targetId: user.id,
+        summary: "User logged in.",
+      });
+
+      redirect("/dashboard");
+    },
   );
-
-  if (!passwordMatches) {
-    return {
-      success: false,
-      message: "Invalid email or password.",
-    };
-  }
-
-  if (user.status === AccountStatus.SUSPENDED) {
-    return {
-      success: false,
-      message: "This account has been suspended. Contact the guild office.",
-    };
-  }
-
-  await db.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
-
-  await createSession(user.id);
-
-  await logAudit({
-    actorId: user.id,
-    action: "auth.login",
-    targetType: "User",
-    targetId: user.id,
-    summary: "User logged in.",
-  });
-
-  redirect("/dashboard");
 }
 
 export async function logoutAction() {
@@ -175,75 +188,81 @@ export async function registerPrefectAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const parsed = prefectRegistrationSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "auth.registerPrefectAction",
+    "Unable to submit the registration right now. Try again in a moment.",
+    async () => {
+      const parsed = prefectRegistrationSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const email = parsed.data.email.toLowerCase();
-  const existingUser = await db.user.findUnique({ where: { email } });
+      const email = parsed.data.email.toLowerCase();
+      const existingUser = await db.user.findUnique({ where: { email } });
 
-  if (existingUser) {
-    return {
-      success: false,
-      message: "An account already exists for this email.",
-    };
-  }
+      if (existingUser) {
+        return {
+          success: false,
+          message: "An account already exists for this email.",
+        };
+      }
 
-  const profileImage = formData.get("profileImage");
-  let profileImagePath: string | null = null;
+      const profileImage = formData.get("profileImage");
+      let profileImagePath: string | null = null;
 
-  if (profileImage instanceof File && profileImage.size > 0) {
-    try {
-      profileImagePath = await saveProfileImage(profileImage);
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unable to store profile image.",
-      };
-    }
-  }
+      if (profileImage instanceof File && profileImage.size > 0) {
+        try {
+          profileImagePath = await saveProfileImage(profileImage);
+        } catch (error) {
+          return {
+            success: false,
+            message:
+              error instanceof Error ? error.message : "Unable to store profile image.",
+          };
+        }
+      }
 
-  const passwordHash = await hashPassword(parsed.data.password);
+      const passwordHash = await hashPassword(parsed.data.password);
 
-  await db.user.create({
-    data: {
-      email,
-      fullName: parsed.data.fullName,
-      whatsappNumber: parsed.data.whatsappNumber,
-      passwordHash,
-      role: Role.PREFECT,
-      status: AccountStatus.PENDING_VERIFICATION,
-      prefectProfile: {
-        create: {
-          displayName: parsed.data.displayName,
-          grade: parsed.data.grade,
-          section: parsed.data.section,
-          appointedYear: parsed.data.appointedYear,
-          profileImagePath,
-          bio: parsed.data.bio,
+      await db.user.create({
+        data: {
+          email,
+          fullName: parsed.data.fullName,
+          whatsappNumber: parsed.data.whatsappNumber,
+          passwordHash,
+          role: Role.PREFECT,
+          status: AccountStatus.PENDING_VERIFICATION,
+          prefectProfile: {
+            create: {
+              displayName: parsed.data.displayName,
+              grade: parsed.data.grade,
+              section: parsed.data.section,
+              appointedYear: parsed.data.appointedYear,
+              profileImagePath,
+              bio: parsed.data.bio,
+            },
+          },
         },
-      },
-    },
-  });
+      });
 
-  await logAudit({
-    action: "prefect.registered",
-    targetType: "User",
-    summary: `New prefect registration submitted for ${parsed.data.fullName}.`,
-    meta: {
-      email,
-      grade: parsed.data.grade,
-      appointedYear: parsed.data.appointedYear,
-    },
-  });
+      await logAudit({
+        action: "prefect.registered",
+        targetType: "User",
+        summary: `New prefect registration submitted for ${parsed.data.fullName}.`,
+        meta: {
+          email,
+          grade: parsed.data.grade,
+          appointedYear: parsed.data.appointedYear,
+        },
+      });
 
-  redirect("/login?registered=1");
+      redirect("/login?registered=1");
+    },
+  );
 }
 
 export async function requestPasswordResetAction(
@@ -251,31 +270,37 @@ export async function requestPasswordResetAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const parsed = passwordResetRequestSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "auth.requestPasswordResetAction",
+    "Unable to process the reset request right now. Try again in a moment.",
+    async () => {
+      const parsed = passwordResetRequestSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const user = await db.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
-  });
+      const user = await db.user.findUnique({
+        where: { email: parsed.data.email.toLowerCase() },
+      });
 
-  if (user) {
-    const token = await createPasswordResetToken(user.id);
-    const settings = await getSystemSettings();
-    const resetUrl = `${settings.appUrl}/reset-password?token=${token}`;
-    await sendPasswordResetEmail(user.email, resetUrl);
-  }
+      if (user) {
+        const token = await createPasswordResetToken(user.id);
+        const settings = await getSystemSettings();
+        const resetUrl = `${settings.appUrl}/reset-password?token=${token}`;
+        await sendPasswordResetEmail(user.email, resetUrl);
+      }
 
-  return {
-    success: true,
-    message:
-      "If an account exists for that email, a reset link has been sent.",
-  };
+      return {
+        success: true,
+        message:
+          "If an account exists for that email, a reset link has been sent.",
+      };
+    },
+  );
 }
 
 export async function resetPasswordAction(
@@ -283,46 +308,52 @@ export async function resetPasswordAction(
   formData: FormData,
 ): Promise<ActionState> {
   void _previousState;
-  const parsed = passwordResetSchema.safeParse(formValues(formData));
+  return safeActionState(
+    "auth.resetPasswordAction",
+    "Unable to reset the password right now. Try again in a moment.",
+    async () => {
+      const parsed = passwordResetSchema.safeParse(formValues(formData));
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors: parsed.error.flatten().fieldErrors,
-    };
-  }
+      if (!parsed.success) {
+        return {
+          success: false,
+          errors: parsed.error.flatten().fieldErrors,
+        };
+      }
 
-  const token = await consumePasswordResetToken(parsed.data.token);
+      const token = await consumePasswordResetToken(parsed.data.token);
 
-  if (!token) {
-    return {
-      success: false,
-      message: "This reset link is invalid or has expired.",
-    };
-  }
+      if (!token) {
+        return {
+          success: false,
+          message: "This reset link is invalid or has expired.",
+        };
+      }
 
-  const passwordHash = await hashPassword(parsed.data.password);
+      const passwordHash = await hashPassword(parsed.data.password);
 
-  await db.user.update({
-    where: { id: token.userId },
-    data: { passwordHash },
-  });
+      await db.user.update({
+        where: { id: token.userId },
+        data: { passwordHash },
+      });
 
-  await markPasswordResetTokenUsed(token.id);
-  await invalidateAllUserSessions(token.userId);
+      await markPasswordResetTokenUsed(token.id);
+      await invalidateAllUserSessions(token.userId);
 
-  await logAudit({
-    actorId: token.userId,
-    action: "auth.password_reset",
-    targetType: "User",
-    targetId: token.userId,
-    summary: "Password reset completed.",
-  });
+      await logAudit({
+        actorId: token.userId,
+        action: "auth.password_reset",
+        targetType: "User",
+        targetId: token.userId,
+        summary: "Password reset completed.",
+      });
 
-  revalidatePath("/login");
+      revalidatePath("/login");
 
-  return {
-    success: true,
-    message: "Password reset successfully. You can now sign in.",
-  };
+      return {
+        success: true,
+        message: "Password reset successfully. You can now sign in.",
+      };
+    },
+  );
 }

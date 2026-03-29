@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { safeRead } from "@/lib/runtime-safety";
 
 export async function logAudit(input: {
   actorId?: string | null;
@@ -9,14 +10,19 @@ export async function logAudit(input: {
   summary: string;
   meta?: Record<string, unknown>;
 }) {
-  return db.auditLog.create({
-    data: {
-      actorId: input.actorId ?? null,
-      action: input.action,
-      targetType: input.targetType,
-      targetId: input.targetId ?? null,
-      summary: input.summary,
-      meta: input.meta as Prisma.InputJsonValue | undefined,
-    },
-  });
+  return safeRead(
+    "audit.logAudit",
+    () =>
+      db.auditLog.create({
+        data: {
+          actorId: input.actorId ?? null,
+          action: input.action,
+          targetType: input.targetType,
+          targetId: input.targetId ?? null,
+          summary: input.summary,
+          meta: input.meta as Prisma.InputJsonValue | undefined,
+        },
+      }),
+    () => null,
+  );
 }

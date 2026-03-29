@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { formatDisplayDate, formatDisplayDateTime, toDayKey } from "@/lib/date";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireUser } from "@/lib/session";
 import { reviewAbsenceAction } from "@/lib/actions/dashboard-actions";
 
@@ -21,49 +22,11 @@ export default async function AttendancePage() {
   const [reminderCount, attendanceRecords, absences, reminders, scanLogs, staffSummary] =
     await Promise.all([
       getReminderCount(user.id),
-      db.attendanceRecord.findMany({
-        where: user.role === Role.PREFECT ? { userId: user.id } : undefined,
-        include: {
-          user: {
-            select: {
-              fullName: true,
-            },
-          },
-        },
-        orderBy: { scannedAt: "desc" },
-        take: 30,
-      }),
-      db.absenceRequest.findMany({
-        where: user.role === Role.PREFECT ? { userId: user.id } : undefined,
-        include: {
-          user: {
-            select: {
-              fullName: true,
-            },
-          },
-          reviewedBy: {
-            select: {
-              fullName: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 30,
-      }),
-      db.reminder.findMany({
-        where: {
-          recipientId: user.id,
-          title: "Attendance reason required",
-        },
-        orderBy: { dueAt: "desc" },
-        take: 5,
-      }),
-      user.role === Role.PREFECT
-        ? []
-        : db.attendanceScanLog.findMany({
-            where: {
-              dayKey: todayKey,
-            },
+      safeRead(
+        "dashboard.attendance.records",
+        () =>
+          db.attendanceRecord.findMany({
+            where: user.role === Role.PREFECT ? { userId: user.id } : undefined,
             include: {
               user: {
                 select: {
@@ -72,42 +35,125 @@ export default async function AttendancePage() {
               },
             },
             orderBy: { scannedAt: "desc" },
-            take: 20,
+            take: 30,
           }),
+        () => [],
+      ),
+      safeRead(
+        "dashboard.attendance.absences",
+        () =>
+          db.absenceRequest.findMany({
+            where: user.role === Role.PREFECT ? { userId: user.id } : undefined,
+            include: {
+              user: {
+                select: {
+                  fullName: true,
+                },
+              },
+              reviewedBy: {
+                select: {
+                  fullName: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 30,
+          }),
+        () => [],
+      ),
+      safeRead(
+        "dashboard.attendance.reminders",
+        () =>
+          db.reminder.findMany({
+            where: {
+              recipientId: user.id,
+              title: "Attendance reason required",
+            },
+            orderBy: { dueAt: "desc" },
+            take: 5,
+          }),
+        () => [],
+      ),
+      user.role === Role.PREFECT
+        ? []
+        : safeRead(
+            "dashboard.attendance.scanLogs",
+            () =>
+              db.attendanceScanLog.findMany({
+                where: {
+                  dayKey: todayKey,
+                },
+                include: {
+                  user: {
+                    select: {
+                      fullName: true,
+                    },
+                  },
+                },
+                orderBy: { scannedAt: "desc" },
+                take: 20,
+              }),
+            () => [],
+          ),
       user.role === Role.PREFECT
         ? null
         : Promise.all([
-            db.attendanceRecord.count({
-              where: {
-                dayKey: todayKey,
-              },
-            }),
-            db.attendanceScanLog.count({
-              where: {
-                dayKey: todayKey,
-                status: AttendanceScanStatus.DUPLICATE,
-              },
-            }),
-            db.attendanceScanLog.count({
-              where: {
-                dayKey: todayKey,
-                status: AttendanceScanStatus.INVALID,
-              },
-            }),
-            db.absenceRequest.count({
-              where: {
-                status: "SUBMITTED",
-              },
-            }),
-            db.reminder.count({
-              where: {
-                title: "Attendance reason required",
-                dueAt: {
-                  gte: new Date(`${todayKey}T00:00:00.000Z`),
-                  lte: new Date(`${todayKey}T23:59:59.999Z`),
-                },
-              },
-            }),
+            safeRead(
+              "dashboard.attendance.summary.accepted",
+              () =>
+                db.attendanceRecord.count({
+                  where: {
+                    dayKey: todayKey,
+                  },
+                }),
+              () => 0,
+            ),
+            safeRead(
+              "dashboard.attendance.summary.duplicates",
+              () =>
+                db.attendanceScanLog.count({
+                  where: {
+                    dayKey: todayKey,
+                    status: AttendanceScanStatus.DUPLICATE,
+                  },
+                }),
+              () => 0,
+            ),
+            safeRead(
+              "dashboard.attendance.summary.invalid",
+              () =>
+                db.attendanceScanLog.count({
+                  where: {
+                    dayKey: todayKey,
+                    status: AttendanceScanStatus.INVALID,
+                  },
+                }),
+              () => 0,
+            ),
+            safeRead(
+              "dashboard.attendance.summary.pendingAbsences",
+              () =>
+                db.absenceRequest.count({
+                  where: {
+                    status: "SUBMITTED",
+                  },
+                }),
+              () => 0,
+            ),
+            safeRead(
+              "dashboard.attendance.summary.missingReasons",
+              () =>
+                db.reminder.count({
+                  where: {
+                    title: "Attendance reason required",
+                    dueAt: {
+                      gte: new Date(`${todayKey}T00:00:00.000Z`),
+                      lte: new Date(`${todayKey}T23:59:59.999Z`),
+                    },
+                  },
+                }),
+              () => 0,
+            ),
           ]),
     ]);
 

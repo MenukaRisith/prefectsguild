@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { formatDisplayDateTime } from "@/lib/date";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireUser } from "@/lib/session";
 import { updateTaskStatusAction } from "@/lib/actions/dashboard-actions";
 
@@ -24,23 +25,33 @@ export default async function TasksPage() {
   const user = await requireUser();
   const [reminderCount, prefects, tasks] = await Promise.all([
     getReminderCount(user.id),
-    db.user.findMany({
-      where: { role: Role.PREFECT, status: "ACTIVE" },
-      select: { id: true, fullName: true },
-      orderBy: { fullName: "asc" },
-    }),
-    db.task.findMany({
-      where:
-        user.role === Role.PREFECT
-          ? {
-              assigneeId: user.id,
-            }
-          : undefined,
-      include: {
-        assignee: { select: { fullName: true } },
-      },
-      orderBy: [{ status: "asc" }, { dueAt: "asc" }],
-    }),
+    safeRead(
+      "dashboard.tasks.prefects",
+      () =>
+        db.user.findMany({
+          where: { role: Role.PREFECT, status: "ACTIVE" },
+          select: { id: true, fullName: true },
+          orderBy: { fullName: "asc" },
+        }),
+      () => [],
+    ),
+    safeRead(
+      "dashboard.tasks.tasks",
+      () =>
+        db.task.findMany({
+          where:
+            user.role === Role.PREFECT
+              ? {
+                  assigneeId: user.id,
+                }
+              : undefined,
+          include: {
+            assignee: { select: { fullName: true } },
+          },
+          orderBy: [{ status: "asc" }, { dueAt: "asc" }],
+        }),
+      () => [],
+    ),
   ]);
 
   return (

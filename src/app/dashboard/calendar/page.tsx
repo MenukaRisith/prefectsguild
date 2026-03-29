@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { formatDisplayDateTime } from "@/lib/date";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,15 @@ export default async function CalendarPage() {
   const user = await requireUser();
   const [reminderCount, events] = await Promise.all([
     getReminderCount(user.id),
-    db.calendarEvent.findMany({
-      orderBy: { eventDate: "asc" },
-      include: { createdBy: { select: { fullName: true } } },
-    }),
+    safeRead(
+      "dashboard.calendar.events",
+      () =>
+        db.calendarEvent.findMany({
+          orderBy: { eventDate: "asc" },
+          include: { createdBy: { select: { fullName: true } } },
+        }),
+      () => [],
+    ),
   ]);
 
   return (

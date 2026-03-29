@@ -5,11 +5,11 @@ import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { db } from "@/lib/db";
 import { formatDisplayDateTime } from "@/lib/date";
 import {
   getOverviewStats,
   getPrefectDashboardFeed,
+  getRecentReminders,
   getReminderCount,
   getStaffDashboardFeed,
   getStaffOperationsSnapshot,
@@ -24,15 +24,7 @@ export default async function DashboardHomePage() {
   const [stats, reminders, announcements, reminderCount, staffSnapshot, staffFeed, prefectFeed] =
     await Promise.all([
     getOverviewStats(user.id, user.role),
-    db.reminder.findMany({
-      where: {
-        recipientId: user.id,
-      },
-      orderBy: {
-        dueAt: "desc",
-      },
-      take: 5,
-    }),
+    getRecentReminders(user.id),
     getVisibleAnnouncements(user.role),
     getReminderCount(user.id),
     user.role === Role.PREFECT ? null : getStaffOperationsSnapshot(),

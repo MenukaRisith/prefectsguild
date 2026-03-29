@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { formatDisplayDateTime } from "@/lib/date";
 import { getReminderCount } from "@/lib/queries";
+import { safeRead } from "@/lib/runtime-safety";
 import { requireRole } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -13,17 +14,22 @@ export default async function AuditPage() {
   const user = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
   const [reminderCount, logs] = await Promise.all([
     getReminderCount(user.id),
-    db.auditLog.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        actor: {
-          select: {
-            fullName: true,
+    safeRead(
+      "dashboard.audit.logs",
+      () =>
+        db.auditLog.findMany({
+          orderBy: { createdAt: "desc" },
+          include: {
+            actor: {
+              select: {
+                fullName: true,
+              },
+            },
           },
-        },
-      },
-      take: 40,
-    }),
+          take: 40,
+        }),
+      () => [],
+    ),
   ]);
 
   return (

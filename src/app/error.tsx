@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function GlobalError({
@@ -9,19 +10,36 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  console.error("Global application error", error);
+
   return (
     <html lang="en">
-      <body className="flex min-h-screen items-center justify-center bg-background px-6">
-        <div className="max-w-xl space-y-4 rounded-[2rem] border border-border/70 bg-card p-8 text-center shadow-xl">
-          <p className="text-sm uppercase tracking-[0.25em] text-primary/80">System error</p>
-          <h1 className="font-heading text-3xl font-semibold">Something interrupted the workflow.</h1>
-          <p className="text-sm leading-7 text-muted-foreground">
-            {error.message || "An unexpected error occurred."}
-          </p>
-          <Button onClick={() => reset()} className="rounded-full">
-            Try again
-          </Button>
-        </div>
+      <body className="min-h-screen bg-background text-foreground">
+        <main className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-16 sm:px-6">
+          <div className="w-full rounded-[1.5rem] border border-border/70 bg-card/80 p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+              System stability guard
+            </p>
+            <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">
+              Something went wrong, but the system stayed online.
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              Retry this screen first. If the same issue keeps happening, go back to the login page
+              and try again.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button type="button" onClick={reset} className="rounded-full">
+                Retry
+              </Button>
+              <Button asChild type="button" variant="outline" className="rounded-full">
+                <Link href="/login">Back to login</Link>
+              </Button>
+            </div>
+            {error.digest ? (
+              <p className="mt-4 text-xs text-muted-foreground">Reference: {error.digest}</p>
+            ) : null}
+          </div>
+        </main>
       </body>
     </html>
   );
