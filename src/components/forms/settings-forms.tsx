@@ -101,7 +101,7 @@ export function PlatformSettingsForm({
             <Label htmlFor="settings-appUrl">Public app URL</Label>
             <Input id="settings-appUrl" name="appUrl" type="url" defaultValue={settings.appUrl} />
             <p className="text-xs leading-5 text-muted-foreground">
-              Password reset links and public references use this URL.
+              Password reset links, public references, and secure-cookie fallback use this URL.
             </p>
             <FieldError errors={state.errors} name="appUrl" />
           </div>

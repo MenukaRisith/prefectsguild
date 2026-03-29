@@ -5,6 +5,7 @@ import type { Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { hasRole } from "@/lib/permissions";
+import { getSystemSettingsRecord } from "@/lib/system-settings";
 
 const sessionCookieName = "kccpg_session";
 const sessionDurationMs = 1000 * 60 * 60 * 24 * 30;
@@ -19,12 +20,14 @@ async function getRequestMetadata() {
   const headerStore = await headers();
   const forwardedFor = headerStore.get("x-forwarded-for");
   const forwardedProto = headerStore.get("x-forwarded-proto");
+  const settings = await getSystemSettingsRecord();
+  const effectiveAppUrl = settings?.appUrl || env.APP_URL;
 
   return {
     userAgent: headerStore.get("user-agent") ?? "Unknown device",
     ipAddress: forwardedFor?.split(",")[0]?.trim() ?? "127.0.0.1",
     isSecure:
-      forwardedProto === "https" || env.APP_URL.startsWith("https://"),
+      forwardedProto === "https" || effectiveAppUrl.startsWith("https://"),
   };
 }
 

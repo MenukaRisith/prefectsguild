@@ -53,6 +53,14 @@ export default async function SettingsPage() {
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p className="break-all text-foreground">{settings.appUrl}</p>
               <p>Password reset emails and public-facing links use this address.</p>
+              <a
+                href={settings.appUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-fit font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Open public site
+              </a>
             </CardContent>
           </Card>
 
@@ -93,8 +101,11 @@ export default async function SettingsPage() {
               </p>
             </div>
             <div>
-              <p className="font-medium text-foreground">Fallback environment URL</p>
+              <p className="font-medium text-foreground">Deployment fallback URL</p>
               <p>{env.APP_URL}</p>
+              <p className="text-xs leading-5">
+                This is only used if runtime settings storage is unavailable. The live public URL is the one above.
+              </p>
             </div>
             <div>
               <p className="font-medium text-foreground">Server-managed upload path</p>
