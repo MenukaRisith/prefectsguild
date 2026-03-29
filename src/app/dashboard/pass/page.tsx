@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Role } from "@prisma/client";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { EmptyState } from "@/components/empty-state";
@@ -85,7 +86,14 @@ export default async function PassPage() {
               </Button>
             </div>
             <div className="rounded-[2rem] border border-border/70 bg-background/70 p-6 shadow-inner">
-              <img src={qrDataUrl} alt="Prefect QR code" className="mx-auto w-full max-w-xs rounded-3xl" />
+              <Image
+                src={qrDataUrl}
+                alt="Prefect QR code"
+                width={320}
+                height={320}
+                unoptimized
+                className="mx-auto w-full max-w-xs rounded-3xl"
+              />
             </div>
           </CardContent>
         </Card>

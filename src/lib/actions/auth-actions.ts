@@ -37,6 +37,7 @@ export async function setupSuperAdminAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const superAdminCount = await db.user.count({
     where: { role: Role.SUPER_ADMIN },
   });
@@ -96,6 +97,7 @@ export async function loginAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const parsed = loginSchema.safeParse(formValues(formData));
 
   if (!parsed.success) {
@@ -172,6 +174,7 @@ export async function registerPrefectAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const parsed = prefectRegistrationSchema.safeParse(formValues(formData));
 
   if (!parsed.success) {
@@ -247,6 +250,7 @@ export async function requestPasswordResetAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const parsed = passwordResetRequestSchema.safeParse(formValues(formData));
 
   if (!parsed.success) {
@@ -277,6 +281,7 @@ export async function resetPasswordAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const parsed = passwordResetSchema.safeParse(formValues(formData));
 
   if (!parsed.success) {

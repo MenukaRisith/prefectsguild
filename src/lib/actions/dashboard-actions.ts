@@ -36,6 +36,7 @@ export async function createStaffAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole([Role.SUPER_ADMIN]);
   const parsed = staffCreationSchema.safeParse(formValues(formData));
 
@@ -150,6 +151,7 @@ export async function createClassAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole(dutyManagerRoles);
   const parsed = classSchema.safeParse(formValues(formData));
 
@@ -189,6 +191,7 @@ export async function createLocationAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole(dutyManagerRoles);
   const parsed = locationSchema.safeParse(formValues(formData));
 
@@ -223,6 +226,7 @@ export async function assignDutyAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole(assignmentRoles);
   const parsed = dutyAssignmentSchema.safeParse(formValues(formData));
 
@@ -262,6 +266,7 @@ export async function createTaskAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
   const parsed = taskSchema.safeParse(formValues(formData));
 
@@ -332,6 +337,7 @@ export async function createEventAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
   const parsed = eventSchema.safeParse(formValues(formData));
 
@@ -370,6 +376,7 @@ export async function createAnnouncementAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole([Role.ADMIN, Role.SUPER_ADMIN]);
   const parsed = announcementSchema.safeParse(formValues(formData));
 
@@ -405,6 +412,7 @@ export async function submitAbsenceAction(
   _previousState: ActionState = initialActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  void _previousState;
   const actor = await requireRole([Role.PREFECT]);
   const parsed = absenceSchema.safeParse(formValues(formData));
 
