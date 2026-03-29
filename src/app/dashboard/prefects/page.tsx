@@ -46,7 +46,7 @@ export default async function PrefectsPage() {
         description="Review registrations, verification status, issued QR passes, and current prefect profiles."
         reminderCount={reminderCount}
       />
-      <div className="space-y-6 px-4 py-6 md:px-8">
+      <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {prefects.length === 0 ? (
           <EmptyState
             title="No prefect registrations yet"
@@ -56,7 +56,7 @@ export default async function PrefectsPage() {
           prefects.map((prefect) => (
             <Card key={prefect.id} className="rounded-[1.75rem] border-border/70">
               <CardContent className="space-y-6 p-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex items-center gap-4">
                     <UserAvatar
                       fullName={prefect.fullName}
@@ -103,7 +103,7 @@ export default async function PrefectsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="rounded-3xl border border-border/60 bg-background/70 p-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                       Display name
@@ -146,7 +146,7 @@ export default async function PrefectsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                       Section

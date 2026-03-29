@@ -44,7 +44,7 @@ export default async function HomePage() {
       <SiteHeader />
       <main>
         <section className="surface-grid relative overflow-hidden">
-          <div className="mx-auto grid min-h-[70vh] w-full max-w-7xl gap-10 px-6 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-28">
+          <div className="mx-auto grid min-h-[70vh] w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-28">
             <div className="relative z-10 space-y-8">
               <div className="inline-flex rounded-full border border-border/70 bg-background/70 px-4 py-2 text-xs uppercase tracking-[0.25em] text-muted-foreground backdrop-blur">
                 Professional prefect operations
@@ -110,7 +110,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="mx-auto w-full max-w-7xl px-6 py-16">
+        <section id="features" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
           <div className="mb-10 max-w-2xl">
             <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
               Built for guild execution

@@ -24,7 +24,7 @@ export default async function AnnouncementsPage() {
         description="Publish updates for prefects and staff, then surface them across the dashboard."
         reminderCount={reminderCount}
       />
-      <div className="grid gap-6 px-4 py-6 md:px-8 xl:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-6 px-4 py-6 sm:px-6 lg:px-8 xl:grid-cols-[0.9fr_1.1fr]">
         {(user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN) ? (
           <CreateAnnouncementForm />
         ) : null}

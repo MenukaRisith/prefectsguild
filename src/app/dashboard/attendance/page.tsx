@@ -118,7 +118,7 @@ export default async function AttendancePage() {
         description="Review school attendance scans, absence reasons, and follow-up actions."
         reminderCount={reminderCount}
       />
-      <div className="space-y-6 px-4 py-6 md:px-8">
+      <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {user.role === Role.PREFECT ? (
           <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
             <AbsenceRequestForm />
@@ -163,7 +163,7 @@ export default async function AttendancePage() {
             </div>
 
             {staffSummary ? (
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
                 <Card className="rounded-[1.5rem] border-border/70">
                   <CardContent className="p-5">
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">

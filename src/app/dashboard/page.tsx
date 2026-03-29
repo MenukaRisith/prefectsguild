@@ -58,7 +58,7 @@ export default async function DashboardHomePage() {
   return (
     <div>
       <DashboardHeader title={headline} description={description} reminderCount={reminderCount} />
-      <div className="space-y-8 px-4 py-6 md:px-8">
+      <div className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
         {hasPendingVerification ? (
           <Alert className="border-amber-500/30 bg-amber-500/8">
             <AlertTriangle className="size-4" />
@@ -77,7 +77,7 @@ export default async function DashboardHomePage() {
           </Alert>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {stats.map((item) => (
             <Card key={item.label} className="rounded-[1.75rem] border-border/70">
               <CardHeader className="pb-3">
@@ -99,7 +99,7 @@ export default async function DashboardHomePage() {
                 <CardTitle className="font-heading text-2xl">Your next responsibilities</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="rounded-3xl border border-border/60 bg-background/70 p-4">
                     <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                       <QrCode className="size-4" />
@@ -125,7 +125,7 @@ export default async function DashboardHomePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-4 xl:grid-cols-2">
                   <div className="space-y-3">
                     <h3 className="font-medium">Priority tasks</h3>
                     {prefectFeed.tasks.length === 0 ? (
@@ -205,7 +205,7 @@ export default async function DashboardHomePage() {
                 <CardTitle className="font-heading text-2xl">Today&apos;s guild operations</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div className="rounded-3xl border border-border/60 bg-background/70 p-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                       Present today
@@ -232,7 +232,7 @@ export default async function DashboardHomePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-3">
                     <h3 className="font-medium">
                       Verification queue ({staffSnapshot.pendingVerification})
@@ -261,7 +261,7 @@ export default async function DashboardHomePage() {
 
                   <div className="space-y-3">
                     <h3 className="font-medium">Scan and event watch</h3>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-3xl border border-border/60 bg-background/70 p-4">
                         <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                           <ScanLine className="size-4" />
@@ -306,7 +306,7 @@ export default async function DashboardHomePage() {
                 {staffFeed.recentScans.length > 0 ? (
                   <div className="space-y-3">
                     <h3 className="font-medium">Recent scan activity</h3>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-3 xl:grid-cols-2">
                       {staffFeed.recentScans.map((scan) => (
                         <div
                           key={scan.id}

@@ -68,8 +68,8 @@ export function CreateStaffForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2 md:col-span-2">
+        <form action={action} className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2 lg:col-span-2">
             <ActionFeedback state={state} />
           </div>
           <div className="space-y-2">
@@ -92,14 +92,14 @@ export function CreateStaffForm() {
             <Input id="staff-password" name="password" type="password" />
             <FieldError errors={state.errors} name="password" />
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="space-y-2 lg:col-span-2">
             <Label htmlFor="staff-role">Role</Label>
             <NativeSelect name="role" defaultValue="TEACHER">
               <option value="TEACHER">Teacher</option>
               <option value="ADMIN">Admin</option>
             </NativeSelect>
           </div>
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
             <SubmitButton className="rounded-full" pendingLabel="Creating staff account...">
               Create account
             </SubmitButton>
@@ -120,7 +120,7 @@ export function CreateClassForm() {
         <CardDescription>Add or update a class by grade and section.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="grid gap-4 md:grid-cols-3">
+        <form action={action} className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="class-grade">Grade</Label>
             <Input id="class-grade" name="grade" type="number" min={6} max={13} />
@@ -131,15 +131,15 @@ export function CreateClassForm() {
             <Input id="class-section" name="section" placeholder="A / Science" />
             <FieldError errors={state.errors} name="section" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="class-label">Label</Label>
             <Input id="class-label" name="label" placeholder="Grade 10 - A" />
             <FieldError errors={state.errors} name="label" />
           </div>
-          <div className="md:col-span-3">
+          <div className="sm:col-span-2">
             <ActionFeedback state={state} />
           </div>
-          <div className="md:col-span-3">
+          <div className="sm:col-span-2">
             <SubmitButton className="rounded-full" pendingLabel="Saving class...">
               Save class
             </SubmitButton>

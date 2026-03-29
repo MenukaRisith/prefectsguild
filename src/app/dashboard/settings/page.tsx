@@ -18,7 +18,7 @@ export default async function SettingsPage() {
         description="Operational notes, cron endpoints, storage, and deployment requirements for the self-hosted installation."
         reminderCount={reminderCount}
       />
-      <div className="grid gap-6 px-4 py-6 md:px-8 xl:grid-cols-2">
+      <div className="grid gap-6 px-4 py-6 sm:px-6 lg:px-8 xl:grid-cols-2">
         <Card className="rounded-[1.75rem] border-border/70">
           <CardHeader>
             <CardTitle className="font-heading text-2xl">Runtime requirements</CardTitle>

@@ -13,7 +13,7 @@ export default async function RegisterPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-14">
+    <main className="mx-auto min-h-screen w-full max-w-7xl px-4 py-14 sm:px-6">
       <div className="mb-10 space-y-6">
         <BrandMark />
         <div className="max-w-3xl space-y-4">

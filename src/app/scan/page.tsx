@@ -3,7 +3,7 @@ import { QrScanner } from "@/components/scanner/qr-scanner";
 
 export default function ScanPage() {
   return (
-    <main className="mx-auto min-h-screen w-full max-w-7xl px-6 py-12">
+    <main className="mx-auto min-h-screen w-full max-w-7xl px-4 py-12 sm:px-6">
       <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div className="space-y-4">
           <BrandMark />

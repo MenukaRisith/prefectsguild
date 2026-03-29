@@ -33,7 +33,7 @@ export default async function AuditPage() {
         description="Review important system actions including verification, status changes, scans, and password resets."
         reminderCount={reminderCount}
       />
-      <div className="px-4 py-6 md:px-8">
+      <div className="px-4 py-6 sm:px-6 lg:px-8">
         <Card className="rounded-[1.75rem] border-border/70">
           <CardHeader>
             <CardTitle className="font-heading text-2xl">Recent audit entries</CardTitle>

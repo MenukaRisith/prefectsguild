@@ -15,7 +15,7 @@ export default async function SetupPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 py-16">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-16 sm:px-6">
       <div className="grid w-full gap-12 lg:grid-cols-[0.95fr_0.8fr] lg:items-center">
         <div className="space-y-6">
           <BrandMark />

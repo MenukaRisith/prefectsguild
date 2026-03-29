@@ -28,7 +28,7 @@ export default async function CalendarPage() {
         description="Coordinate prefect events, briefings, and reminder-backed dates."
         reminderCount={reminderCount}
       />
-      <div className="space-y-6 px-4 py-6 md:px-8">
+      <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {(user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN) ? <CreateEventForm /> : null}
 
         <Card className="rounded-[1.75rem] border-border/70">

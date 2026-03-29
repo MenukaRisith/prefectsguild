@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <BrandMark />
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           <Link href="#features" className="transition hover:text-foreground">

@@ -48,9 +48,9 @@ export default async function DutiesPage() {
         description="Manage class targets, named duty locations, and prefect duty assignments."
         reminderCount={reminderCount}
       />
-      <div className="space-y-6 px-4 py-6 md:px-8">
+      <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {user.role !== Role.PREFECT ? (
-          <div className="grid gap-6 xl:grid-cols-3">
+          <div className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-3">
             {(user.role === Role.TEACHER || user.role === Role.SUPER_ADMIN) ? (
               <>
                 <CreateClassForm />
@@ -72,7 +72,7 @@ export default async function DutiesPage() {
             <CardHeader>
               <CardTitle className="font-heading text-2xl">Duty masters</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardContent className="grid gap-4 2xl:grid-cols-2">
               <div className="space-y-3">
                 <h3 className="font-medium">Academic classes</h3>
                 {classes.length === 0 ? (

@@ -23,7 +23,7 @@ export default async function PassPage() {
           description="QR passes are issued to active prefect accounts after verification."
           reminderCount={reminderCount}
         />
-        <div className="px-4 py-6 md:px-8">
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
           <EmptyState
             title="No personal QR pass for this role"
             description="Use the attendance and reports pages to manage prefect QR activity."
@@ -41,7 +41,7 @@ export default async function PassPage() {
           description="Your pass becomes available once an admin verifies your prefect registration."
           reminderCount={reminderCount}
         />
-        <div className="px-4 py-6 md:px-8">
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
           <EmptyState
             title="Verification still pending"
             description="Your printable pass and QR code will be generated as soon as your account is verified."
@@ -65,12 +65,12 @@ export default async function PassPage() {
         description="Download and print the QR pass used for school attendance scanning."
         reminderCount={reminderCount}
       />
-      <div className="px-4 py-6 md:px-8">
+      <div className="px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl rounded-[2rem] border-border/70">
           <CardHeader>
             <CardTitle className="font-heading text-2xl">Prefect QR pass</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-8 p-6 md:grid-cols-[0.95fr_1.05fr] md:items-center">
+          <CardContent className="grid gap-8 p-6 xl:grid-cols-[0.95fr_1.05fr] xl:items-center">
             <div className="space-y-4">
               <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
                 {qrPass.prefectIdentifier}
@@ -79,7 +79,7 @@ export default async function PassPage() {
               <p className="text-base leading-7 text-muted-foreground">
                 Print this pass and keep it ready for the school gate scanner. Duplicate scans on the same day are logged automatically.
               </p>
-              <Button asChild size="lg" className="rounded-full">
+              <Button asChild size="lg" className="w-full rounded-full sm:w-auto">
                 <a href="/api/pass/me" target="_blank" rel="noreferrer">
                   Download PDF pass
                 </a>

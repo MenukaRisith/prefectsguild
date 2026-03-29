@@ -103,7 +103,7 @@ export function QrScanner() {
   }, [startScanner]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <Card className="rounded-[1.75rem] border-border/70">
         <CardHeader>
           <CardTitle className="font-heading text-2xl">Live camera scanner</CardTitle>
@@ -177,7 +177,7 @@ export function QrScanner() {
             <p className="mt-2 text-sm text-muted-foreground">
               If the kiosk uses a hardware scanner, paste or type the QR token and submit it here.
             </p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <Input
                 value={manualToken}
                 onChange={(event) => setManualToken(event.target.value)}
@@ -185,7 +185,7 @@ export function QrScanner() {
               />
               <Button
                 type="button"
-                className="rounded-full"
+                className="rounded-full sm:w-auto"
                 onClick={() => {
                   void submitToken(manualToken);
                   setManualToken("");

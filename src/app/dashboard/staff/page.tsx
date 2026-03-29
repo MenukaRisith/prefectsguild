@@ -33,7 +33,7 @@ export default async function StaffPage() {
         description="Provision teacher and admin accounts, then manage their access from one place."
         reminderCount={reminderCount}
       />
-      <div className="grid gap-6 px-4 py-6 md:px-8 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6 px-4 py-6 sm:px-6 lg:px-8 xl:grid-cols-[0.95fr_1.05fr]">
         <CreateStaffForm />
         <Card className="rounded-[1.75rem] border-border/70">
           <CardHeader>
@@ -49,7 +49,7 @@ export default async function StaffPage() {
               staff.map((member) => (
                 <div
                   key={member.id}
-                  className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-background/70 p-5 md:flex-row md:items-center md:justify-between"
+                  className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-background/70 p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <h2 className="font-medium">{member.fullName}</h2>
